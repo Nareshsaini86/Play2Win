@@ -998,3 +998,448 @@ img{ -webkit-user-drag:none; user-drag:none; }
     if(!Number.isSafeInteger(a)||a<100){m.textContent='Minimum withdrawal ₹100 hai.';return}
     if(a>S.balance){m.textContent='Wallet mein itne coins nahi hain.';return}
     api('create_withdrawal_request',{p_token:S.token,p_amount:a}).then(function(){m.style.color='var(--green)';m.textContent='Withdrawal request submitted. Coins are reserved until admin review.';return Promise.all([refresh(),loadMyWithdrawals()]);}).catch(function(e){m.textContent=e.message});
+  };
+  function loadMyWithdrawals(){
+    if(!S.token||isAdmin())return Promise.resolve();
+    return Promise.all([api('my_withdrawal_requests',{p_token:S.token}),api('get_my_withdrawal_upi',{p_token:S.token})]).then(function(result){
+      var rows=result[0], saved=result[1]; if(saved&&saved.upi_id)$('withdraw-upi').value=saved.upi_id;
+      $('my-withdrawals').innerHTML=rows.length?rows.map(function(w){return '<div class="srow" style="padding:9px 0;border-bottom:1px solid var(--line)"><div><b>₹'+w.amount+'</b><div class="note">'+esc(w.upi_id)+' · '+fmtTime(w.created_at)+'</div></div><span class="mini">'+esc(w.status)+'</span></div>'}).join(''):'<div class="empty">No withdrawal requests yet.</div>';
+      if(rows.length&&rows[0].upi_id)$('withdraw-upi').value=rows[0].upi_id;
+    }).catch(function(e){$('my-withdrawals').textContent=e.message});
+  }
+  function loadWithdrawalRequests(){
+    if(!S.token||!isAdmin())return Promise.resolve();
+    return api('admin_list_withdrawal_requests',{p_token:S.token}).then(function(rows){
+      $('withdraw-pending-count').textContent=rows.filter(function(w){return w.status==='pending'}).length+' Pending';
+      $('withdraw-requests').innerHTML=rows.length?rows.map(function(w){var actions=w.status==='pending'?'<button class="mini" data-wpaid="'+w.id+'">Mark Paid</button> <button class="mini" data-wreject="'+w.id+'">Reject</button>':'<span class="mini">'+esc(w.status)+'</span>';return '<tr><td>'+fmtTime(w.created_at)+'</td><td>'+esc(w.email||w.display_name||w.user_id)+'</td><td>'+esc(w.upi_id)+'</td><td>₹'+w.amount+'</td><td>'+actions+'</td></tr>'}).join(''):'<tr><td colspan="5" class="empty">No withdrawal requests.</td></tr>';
+    }).catch(function(e){$('withdraw-requests').innerHTML='<tr><td colspan="5" class="empty">'+esc(e.message)+'</td></tr>'});
+  }
+  $('withdraw-requests').addEventListener('click',function(e){
+    var paid=e.target.dataset.wpaid,reject=e.target.dataset.wreject,id=paid||reject;if(!id)return;
+    var status=paid?'paid':'rejected';
+    if(paid&&!confirm('Kya aapne UPI/bank se ₹ payout bhej diya hai?'))return;
+    if(reject&&!confirm('Request reject karein? Reserved coins user ko refund honge.'))return;
+    api('admin_review_withdrawal',{p_token:S.token,p_request_id:Number(id),p_status:status}).then(function(){toast(paid?'Withdrawal marked paid.':'Withdrawal rejected; coins refunded.');return Promise.all([loadWithdrawalRequests(),loadUsers()])}).catch(function(e){toast(e.message)});
+  });
+
+  // ---- betting UI ----
+  var nb=$('nums');
+  for(var i=0;i<10;i++){(function(i){var cs=colorsOf(i),b=document.createElement('button');b.className='ball';b.textContent=i;b.style.background=cs.length>1?'linear-gradient(135deg,'+COLORS[cs[0]]+' 50%,'+COLORS[cs[1]]+' 50%)':COLORS[cs[0]];b.dataset.t='num:'+i;b.setAttribute('aria-label','Number '+i+', 9x');nb.appendChild(b)})(i)}
+  var base=10,mult=1;
+  function recalc(){amount=base*mult;$('total').textContent='Total bet: '+base+' × '+mult+' = '+amount+' coins';updatePlace(left()<=5)}
+  function markChips(){document.querySelectorAll('#amt button').forEach(function(x){x.classList.toggle('on',+x.dataset.v===base)});document.querySelectorAll('#mult button').forEach(function(x){x.classList.toggle('on',+x.dataset.v===mult)})}
+  AMTS.forEach(function(a){var b=document.createElement('button');b.textContent=a;b.dataset.v=a;b.onclick=function(){base=a;$('base').value=a;markChips();recalc()};$('amt').appendChild(b)});
+  [1,5,10,20,50,100].forEach(function(m){var b=document.createElement('button');b.textContent='X'+m;b.dataset.v=m;b.onclick=function(){mult=m;markChips();recalc()};$('mult').appendChild(b)});
+  $('base').addEventListener('input',function(){var v=parseInt(this.value,10);base=isNaN(v)||v<1?0:v;markChips();recalc()});
+  markChips();recalc();
+  document.addEventListener('click',function(e){var el=e.target.closest('[data-t]');if(!el)return;target=target===el.dataset.t?null:el.dataset.t;render()});
+  $('place').onclick=function(){
+    if(!target)return;var t=target,a=amount;$('place').disabled=true;
+    api('place_bet',{p_token:S.token,p_target:t,p_amount:a}).then(function(){toast('Bet placed: '+label(t)+' · '+a+' coins');return refresh()}).catch(function(e){toast(e.message);render()});
+  };
+
+  // ---- admin: live bets ----
+  var OPTS=['num:0','num:1','num:2','num:3','num:4','num:5','num:6','num:7','num:8','num:9','color:green','color:violet','color:red','size:big','size:small'];
+  function loadBets(){
+    if(!isAdmin())return;
+    api('admin_bets',{p_token:S.token}).then(function(d){
+      $('b-round').textContent=rl(d.round);
+      var agg={},total=0;OPTS.forEach(function(o){agg[o]={n:{},c:0}});
+      d.current.forEach(function(b){var a=agg[b.target];if(!a)return;a.n[b.user_id]=1;a.c+=b.amount;total+=b.amount});
+      $('b-total').textContent=total;
+      $('b-opts').innerHTML=OPTS.map(function(o){var a=agg[o],n=Object.keys(a.n).length;
+        return '<tr style="opacity:'+(a.c?1:.45)+'"><td>'+label(o)+'</td><td>'+n+'</td><td><b>'+a.c+'</b></td></tr>'}).join('');
+      $('b-cur').innerHTML=d.current.length?d.current.map(function(b){return '<tr><td>'+esc(b.email||b.display_name||b.user_id)+'</td><td>'+label(b.target)+'</td><td>'+b.amount+'</td></tr>'}).join(''):'<tr><td colspan="3" class="empty">No bets in this round yet.</td></tr>';
+      $('b-rec').innerHTML=d.recent.length?d.recent.map(function(b){var net=b.payout-b.amount;
+        return '<tr><td>'+rl(b.round)+'</td><td>'+esc(b.email||b.display_name||b.user_id)+'</td><td>'+label(b.target)+'</td><td>'+b.amount+'</td><td style="color:'+(!b.settled?'var(--mute)':net>=0?'var(--green)':'var(--red)')+'">'+(b.settled?(net>=0?'+':'')+net:'Pending')+'</td></tr>'}).join(''):'<tr><td colspan="5" class="empty">No bets yet.</td></tr>';
+    }).catch(function(e){toast(e.message)});
+  }
+  setInterval(function(){if(S.token&&!document.hidden&&location.hash==='#/bets')loadBets()},4000);
+
+
+  // ---- UPI QR wallet top-up (manual UTR verification) ----
+  var paymentBusy=false, currentDeposit=null;
+  $('pay-now').onclick=function(){
+    var rupees=Number($('pay-amount').value),err=$('pay-err');
+    err.textContent='';err.style.color='var(--red)';
+    if(isAdmin()){err.textContent='Admin accounts cannot add wallet coins.';return}
+    if(!Number.isSafeInteger(rupees)||rupees<10||rupees>50000){err.textContent='Enter an amount between ₹10 and ₹50,000.';return}
+    if(typeof QRCode==='undefined'){err.textContent='QR library load nahi hui. Page refresh karein.';return}
+    $('pay-now').disabled=true;$('pay-now').textContent='Loading payment UPI...';
+    api('get_active_payment_upi',{p_token:S.token}).then(function(receiver){
+      MERCHANT_UPI_ID=receiver&&receiver.upi_id||'';
+      MERCHANT_NAME=receiver&&receiver.payee_name||'Play2Win';
+      if(!MERCHANT_UPI_ID||MERCHANT_UPI_ID.indexOf('@')<1)throw new Error('Admin ne abhi receiving UPI ID configure nahi ki hai.');
+      var ref='P2W'+Date.now().toString().slice(-10)+Math.floor(Math.random()*90+10);
+      var note='Wallet '+ref+' '+S.id;
+      var link='upi://pay?pa='+encodeURIComponent(MERCHANT_UPI_ID)+'&pn='+encodeURIComponent(MERCHANT_NAME)+'&am='+rupees+'&cu=INR&tn='+encodeURIComponent(note);
+      currentDeposit={amount:rupees,ref:ref,receiverUpi:MERCHANT_UPI_ID};
+      $('upi-qr').innerHTML='';
+      new QRCode($('upi-qr'),{text:link,width:200,height:200});
+      $('upi-details').textContent='Pay ₹'+rupees+' to '+MERCHANT_UPI_ID+' · Ref '+ref;
+      $('upi-utr').value='';$('upi-err').textContent='';
+      $('upi-payment').classList.remove('hide');
+      err.style.color='var(--green)';err.textContent='QR ready hai. Payment complete karke UTR submit karein.';
+    }).catch(function(e){err.textContent=e.message})
+      .then(function(){$('pay-now').disabled=false;$('pay-now').textContent='Generate UPI QR'});
+  };
+  $('upi-cancel').onclick=function(){$('upi-payment').classList.add('hide');currentDeposit=null};
+  $('upi-submit').onclick=function(){
+    var utr=$('upi-utr').value.trim(),err=$('upi-err');
+    err.style.color='var(--red)';err.textContent='';
+    if(!currentDeposit){err.textContent='Pehle payment QR generate karein.';return}
+    if(!/^\d{12}$/.test(utr)){err.textContent='12 digit UTR number enter karein.';return}
+    if(paymentBusy)return;
+    paymentBusy=true;$('upi-submit').disabled=true;$('upi-submit').textContent='Submitting...';
+    api('submit_coin_deposit',{p_token:S.token,p_amount:currentDeposit.amount,p_utr:utr,p_reference:currentDeposit.ref})
+      .then(function(){
+        err.style.color='var(--green)';err.textContent='UTR submit ho gaya. Admin verification ke baad coins add honge.';
+        $('upi-payment').classList.add('hide');$('pay-amount').value='100';currentDeposit=null;
+        return loadMyDeposits();
+      }).catch(function(e){err.textContent=e.message})
+      .then(function(){paymentBusy=false;$('upi-submit').disabled=false;$('upi-submit').textContent='Submit UTR for verification'});
+  };
+  function loadMyDeposits(){
+    if(!S.token||isAdmin())return Promise.resolve();
+    return api('my_coin_deposits',{p_token:S.token}).then(function(rows){
+      $('my-deposits').innerHTML=rows.length?rows.map(function(d){
+        return '<div class="srow" style="padding:9px 0;border-bottom:1px solid var(--line)"><div><b>₹'+d.amount+'</b><div class="note">UTR: '+esc(d.utr)+' · '+fmtTime(d.created_at)+'</div></div><span class="mini">'+esc(d.status)+'</span></div>';
+      }).join(''):'<div class="empty">No deposit requests yet.</div>';
+    }).catch(function(e){$('my-deposits').textContent=e.message});
+  }
+  // ---- Admin-managed payment receiving UPI IDs ----
+  function loadAdminPaymentUpis(){
+    if(!S.token||!isAdmin())return Promise.resolve();
+    return api('admin_list_payment_upis',{p_token:S.token}).then(function(rows){
+      $('admin-upi-list').innerHTML=rows.length?rows.map(function(u){
+        var active=u.is_active?'<span class="mini" style="color:var(--green)">Active</span>':'<span class="mini">Inactive</span>';
+        var actions='<button class="mini" data-upi-qr="'+u.id+'">QR</button> ';
+        if(!u.is_active)actions+='<button class="mini" data-upi-active="'+u.id+'">Set Active</button> ';
+        actions+='<button class="mini" data-upi-delete="'+u.id+'">Delete</button>';
+        return '<tr><td>'+esc(u.upi_id)+'</td><td>'+esc(u.payee_name||'Play2Win')+'</td><td>'+active+'</td><td>'+actions+'</td></tr>';
+      }).join(''):'<tr><td colspan="4" class="empty">No UPI ID saved. Add one above to enable customer QR payments.</td></tr>';
+    }).catch(function(e){$('admin-upi-list').innerHTML='<tr><td colspan="4" class="empty">'+esc(e.message)+'</td></tr>'});
+  }
+  $('admin-upi-add').onclick=function(){
+    var upi=$('admin-upi-id').value.trim(),name=$('admin-upi-name').value.trim()||'Play2Win',err=$('admin-upi-error');
+    err.style.color='var(--red)';err.textContent='';
+    if(!/^[A-Za-z0-9][A-Za-z0-9._-]{1,}@[A-Za-z]{2,}$/.test(upi)){err.textContent='Valid UPI ID enter karein, jaise name@upi.';return}
+    $('admin-upi-add').disabled=true;
+    api('admin_add_payment_upi',{p_token:S.token,p_upi_id:upi,p_payee_name:name})
+      .then(function(){err.style.color='var(--green)';err.textContent='UPI ID saved. First UPI automatically active ho jayegi.';$('admin-upi-id').value='';return loadAdminPaymentUpis()})
+      .catch(function(e){err.textContent=e.message})
+      .then(function(){$('admin-upi-add').disabled=false});
+  };
+  $('admin-upi-list').addEventListener('click',function(e){
+    var qr=e.target.dataset.upiQr,active=e.target.dataset.upiActive,del=e.target.dataset.upiDelete,id=qr||active||del;
+    if(!id)return;
+    if(qr){
+      api('admin_list_payment_upis',{p_token:S.token}).then(function(rows){
+        var row=rows.find(function(x){return String(x.id)===String(qr)});if(!row)throw new Error('UPI ID not found.');
+        if(typeof QRCode==='undefined')throw new Error('QR library load nahi hui. Page refresh karein.');
+        var link='upi://pay?pa='+encodeURIComponent(row.upi_id)+'&pn='+encodeURIComponent(row.payee_name||'Play2Win')+'&cu=INR';
+        $('admin-upi-qr').innerHTML='';new QRCode($('admin-upi-qr'),{text:link,width:220,height:220});
+        $('admin-upi-qr-title').textContent=row.upi_id+' · '+(row.payee_name||'Play2Win');
+        $('admin-upi-qr-wrap').classList.remove('hide');
+      }).catch(function(x){toast(x.message)});
+      return;
+    }
+    if(active){
+      api('admin_set_active_payment_upi',{p_token:S.token,p_id:Number(active)})
+        .then(function(){toast('Active receiving UPI updated.');return loadAdminPaymentUpis()})
+        .catch(function(x){toast(x.message)});
+      return;
+    }
+    if(del&&confirm('Is UPI ID ko delete karna hai? Active UPI delete hone par customer QR payment tab tak unavailable rahega jab tak doosri UPI activate na karein.')){
+      api('admin_delete_payment_upi',{p_token:S.token,p_id:Number(del)})
+        .then(function(){toast('UPI ID deleted.');$('admin-upi-qr-wrap').classList.add('hide');return loadAdminPaymentUpis()})
+        .catch(function(x){toast(x.message)});
+    }
+  });
+  $('admin-upi-qr-close').onclick=function(){$('admin-upi-qr-wrap').classList.add('hide')};
+
+  function loadDepositRequests(){
+    if(!S.token||!isAdmin())return Promise.resolve();
+    return api('admin_list_coin_deposits',{p_token:S.token}).then(function(rows){
+      var pending=rows.filter(function(d){return d.status==='pending'}).length;
+      $('deposit-pending-count').textContent=pending+' Pending';
+      $('deposit-requests').innerHTML=rows.length?rows.map(function(d){
+        var action=d.status==='pending'?'<button class="mini" data-deposit-approve="'+d.id+'">Approve</button> <button class="mini" data-deposit-reject="'+d.id+'">Reject</button>':'<span class="mini">'+esc(d.status)+'</span>';
+        return '<tr><td>'+fmtTime(d.created_at)+'</td><td>'+esc(d.email||d.display_name||d.user_id)+'</td><td>₹'+d.amount+'</td><td>'+esc(d.utr)+'</td><td>'+action+'</td></tr>';
+      }).join(''):'<tr><td colspan="5" class="empty">No UPI deposit requests.</td></tr>';
+    }).catch(function(e){$('deposit-requests').innerHTML='<tr><td colspan="5" class="empty">'+esc(e.message)+'</td></tr>'});
+  }
+  $('deposit-requests').addEventListener('click',function(e){
+    var approve=e.target.dataset.depositApprove,reject=e.target.dataset.depositReject,id=approve||reject;
+    if(!id)return;
+    var status=approve?'approved':'rejected';
+    if(approve&&!confirm('Bank statement mein payment aur UTR match kar liya hai? Approve karne par coins add honge.'))return;
+    if(reject&&!confirm('Is deposit request ko reject karna hai?'))return;
+    api('admin_review_coin_deposit',{p_token:S.token,p_deposit_id:Number(id),p_status:status})
+      .then(function(){toast(approve?'Deposit approved; coins credited.':'Deposit rejected.');return Promise.all([loadDepositRequests(),loadUsers()])})
+      .catch(function(x){toast(x.message)});
+  });
+  // ---- Admin sound + browser alerts for new deposit/withdrawal requests ----
+  var adminAlertsEnabled=true,adminAlertAudio=null,adminAlertNeedsGesture=false;
+  var lastSeenDepositId=null,lastSeenWithdrawalId=null,adminAlertPrimed=false;
+  var ADMIN_ALERT_PREF_KEY='play2win_admin_sound_alerts';
+  function updateAdminAlertUi(){
+    var status=$('admin-alert-status'),enable=$('admin-alert-enable'),disable=$('admin-alert-disable'),msg=$('admin-alert-message');
+    if(!status)return;
+    status.textContent=adminAlertsEnabled?'Sound on':'Muted';
+    if(enable)enable.classList.add('hide');
+    if(disable)disable.textContent=adminAlertsEnabled?'Mute Sound':'Unmute Sound';
+    if(msg)msg.textContent=adminAlertsEnabled
+      ?(adminAlertNeedsGesture?'Sound alerts ready. Browser may start audio after your first click on this page.':'Sound alerts start automatically on admin login.')
+      :'Sound muted. Click Unmute Sound to turn alerts back on.';
+  }
+  function armAdminAlerts(){
+    adminAlertsEnabled=true;
+    try{localStorage.setItem(ADMIN_ALERT_PREF_KEY,'1')}catch(e){}
+    try{
+      var AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC){adminAlertNeedsGesture=true;updateAdminAlertUi();return false;}
+      if(!adminAlertAudio)adminAlertAudio=new AC();
+      if(adminAlertAudio.state==='suspended'){
+        var resumeResult=adminAlertAudio.resume();
+        if(resumeResult&&resumeResult.catch)resumeResult.catch(function(){adminAlertNeedsGesture=true;});
+      }
+      adminAlertNeedsGesture=adminAlertAudio.state!=='running';
+      updateAdminAlertUi();
+      return !adminAlertNeedsGesture;
+    }catch(e){
+      adminAlertNeedsGesture=true;updateAdminAlertUi();return false;
+    }
+  }
+  function primeAdminAlertAudio(){
+    var wasEnabled=adminAlertsEnabled;
+    armAdminAlerts();
+    if(adminAlertNeedsGesture){
+      // Chrome may require a user gesture for audio playback. Resume silently on the
+      // first ordinary click/tap; users do not need to press a separate Enable button.
+      var resumeOnce=function(){
+        if(!adminAlertsEnabled)return;
+        try{
+          if(adminAlertAudio&&adminAlertAudio.state==='suspended')adminAlertAudio.resume().then(function(){
+            adminAlertNeedsGesture=false;updateAdminAlertUi();
+          }).catch(function(){});
+        }catch(e){}
+      };
+      document.addEventListener('pointerdown',resumeOnce,{once:true,capture:true});
+      document.addEventListener('keydown',resumeOnce,{once:true,capture:true});
+    }
+    if(!wasEnabled)playAdminAlertTone(true);
+    return true;
+  }
+  function playAdminAlertTone(testOnly){
+    if(!adminAlertsEnabled||!adminAlertAudio)return;
+    try{
+      if(adminAlertAudio.state==='suspended')adminAlertAudio.resume();
+      var ctx=adminAlertAudio,now=ctx.currentTime;
+      [0,0.42,0.84].forEach(function(offset,index){
+        var osc=ctx.createOscillator(),gain=ctx.createGain();
+        osc.type='sine';osc.frequency.value=index===1?1046:880;
+        gain.gain.setValueAtTime(0.0001,now+offset);
+        gain.gain.exponentialRampToValueAtTime(0.22,now+offset+0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.24);
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.start(now+offset);osc.stop(now+offset+0.26);
+      });
+      if(testOnly)toast('Sound alert test successful.');
+    }catch(e){}
+  }
+  function notifyAdminRequest(title,body,tag){
+    toast(body);
+    playAdminAlertTone(false);
+    if('Notification' in window&&Notification.permission==='granted'){
+      try{
+        var n=new Notification(title,{body:body,tag:tag,renotify:true});
+        n.onclick=function(){window.focus();location.hash='#/admin';n.close()};
+      }catch(e){}
+    }
+  }
+  $('admin-alert-enable').onclick=function(){primeAdminAlertAudio()};
+  $('admin-alert-disable').onclick=function(){
+    adminAlertsEnabled=!adminAlertsEnabled;
+    try{localStorage.setItem(ADMIN_ALERT_PREF_KEY,adminAlertsEnabled?'1':'0')}catch(e){}
+    if(adminAlertsEnabled)primeAdminAlertAudio();
+    updateAdminAlertUi();
+  };
+  // Restore preference and automatically arm sound as soon as an admin session is active.
+  try{
+    var savedAlertPref=localStorage.getItem(ADMIN_ALERT_PREF_KEY);
+    if(savedAlertPref==='0')adminAlertsEnabled=false;
+    else adminAlertsEnabled=true; // default ON for admins; preference survives logout/re-login.
+  }catch(e){adminAlertsEnabled=true;}
+  updateAdminAlertUi();
+  document.addEventListener('pointerdown',function(){
+    if(S.token&&isAdmin()&&adminAlertsEnabled&&adminAlertNeedsGesture)primeAdminAlertAudio();
+  },{passive:true});
+  document.addEventListener('keydown',function(){
+    if(S.token&&isAdmin()&&adminAlertsEnabled&&adminAlertNeedsGesture)primeAdminAlertAudio();
+  });
+  function pollAdminRequests(){
+    if(!S.token||!isAdmin()||document.hidden)return;
+    Promise.all([
+      api('admin_list_coin_deposits',{p_token:S.token}),
+      api('admin_list_withdrawal_requests',{p_token:S.token})
+    ]).then(function(result){
+      var deposits=result[0]||[],withdrawals=result[1]||[];
+      var maxDeposit=deposits.reduce(function(max,d){return Math.max(max,Number(d.id)||0)},0);
+      var maxWithdrawal=withdrawals.reduce(function(max,w){return Math.max(max,Number(w.id)||0)},0);
+      if(!adminAlertPrimed){
+        lastSeenDepositId=maxDeposit;lastSeenWithdrawalId=maxWithdrawal;adminAlertPrimed=true;
+      }else{
+        var newDeposits=deposits.filter(function(d){return Number(d.id)>lastSeenDepositId&&d.status==='pending'});
+        var newWithdrawals=withdrawals.filter(function(w){return Number(w.id)>lastSeenWithdrawalId&&w.status==='pending'});
+        if(newDeposits.length){
+          var d=newDeposits.length;
+          notifyAdminRequest('Play2Win · New Add Coins Request',
+            d+' new payment request'+(d>1?'s':'')+' received. Please verify UTR and payment.',
+            'play2win-deposit-'+maxDeposit);
+        }
+        if(newWithdrawals.length){
+          var w=newWithdrawals.length;
+          notifyAdminRequest('Play2Win · New Withdrawal Request',
+            w+' new withdrawal request'+(w>1?'s':'')+' received. Please check UPI ID and amount.',
+            'play2win-withdrawal-'+maxWithdrawal);
+        }
+        lastSeenDepositId=Math.max(lastSeenDepositId,maxDeposit);
+        lastSeenWithdrawalId=Math.max(lastSeenWithdrawalId,maxWithdrawal);
+      }
+      if(location.hash==='#/admin'){
+        $('deposit-pending-count').textContent=deposits.filter(function(d){return d.status==='pending'}).length+' Pending';
+        $('withdraw-pending-count').textContent=withdrawals.filter(function(w){return w.status==='pending'}).length+' Pending';
+        loadDepositRequests();loadWithdrawalRequests();
+      }
+    }).catch(function(){});
+  }
+  setInterval(function(){
+    if(S.token&&isAdmin())pollAdminRequests();
+    if(S.token&&!document.hidden&&!isAdmin()&&location.hash==='#/settings'){loadMyDeposits();loadMyWithdrawals();}
+  },5000);
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden&&S.token&&isAdmin())pollAdminRequests();
+  });
+
+  // ---- settings pages ----
+  function fmtTime(t){try{return new Date(t).toLocaleString([], {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
+  function renderSettings(){
+    $('st-name').textContent=S.displayName||S.id||'';
+    $('st-amt').textContent=isAdmin()?'Admin':S.balance+' coins';
+    $('st-sub').textContent=[S.email,S.phone?'Phone: '+S.phone:''].filter(Boolean).join(' · ');
+    if(!isAdmin()){loadMyDeposits();loadMyWithdrawals();}
+    $('st-admin').classList.toggle('hide',!isAdmin());
+    $('settings-wallet-links').classList.toggle('hide',isAdmin());
+    if(isAdmin())api('admin_list_users',{p_token:S.token}).then(function(us){
+      var t=0;us.forEach(function(u){t+=u.balance});$('st-users').textContent=us.length;$('st-total').textContent=t;
+    }).catch(function(){});
+  }
+  function fillTxUsers(){
+    var sel=$('tx-user'),cur=sel.value;sel.classList.remove('hide');
+    return api('admin_list_users',{p_token:S.token}).then(function(us){
+      sel.innerHTML='<option value="">All users</option>'+us.map(function(u){return '<option value="'+esc(u.id)+'">'+esc(u.id)+(u.phone?' ('+esc(u.phone)+')':'')+'</option>'}).join('');sel.value=cur;
+    }).catch(function(){});
+  }
+  function loadTx(){
+    if(!isAdmin()){$('tx-user').classList.add('hide');$('tx-user').innerHTML=''}
+    var args={p_token:S.token},f=isAdmin()?$('tx-user').value:'';if(f)args.p_user=f;
+    $('cl-head').innerHTML=isAdmin()?'<th>Time</th><th>User</th><th>Coins</th>':'<th>Time</th><th>Type</th><th>Coins</th>';
+    $('coinlog').innerHTML='<tr><td colspan="3" class="empty">Loading...</td></tr>';
+    api('my_coin_log',args).then(function(l){
+      $('coinlog').innerHTML=l.length?l.map(function(c){var add=c.amount>0;
+        return '<tr><td>'+fmtTime(c.created_at)+'</td><td>'+(isAdmin()?esc(c.email||c.display_name||c.user_id):(add?'Added':'Deducted'))+'</td><td style="color:'+(add?'var(--green)':'var(--red)')+'">'+(add?'+':'')+c.amount+'</td></tr>'}).join(''):'<tr><td colspan="3" class="empty">'+(f?'No transactions for this user.':'No coins have been added or deducted yet.')+'</td></tr>';
+    }).catch(function(e){$('coinlog').innerHTML='<tr><td colspan="3" class="empty">'+esc(e.message)+'</td></tr>'});
+  }
+  $('tx-user').addEventListener('change',loadTx);
+  function setTheme(t){
+    document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('np_theme',t)}catch(e){}
+    var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='day'?'#f3f5ff':'#0b0d22');
+    var cs=document.querySelector('meta[name="color-scheme"]');if(cs)cs.setAttribute('content',t==='day'?'light':'dark');
+    document.querySelectorAll('[data-theme-set]').forEach(function(b){b.classList.toggle('on',b.dataset.themeSet===t)});
+  }
+  document.querySelectorAll('[data-theme-set]').forEach(function(b){b.onclick=function(){setTheme(b.dataset.themeSet)}});
+  var t0='night';try{t0=localStorage.getItem('np_theme')||'night'}catch(e){}
+  setTheme(t0==='day'?'day':'night');
+  $('gear').onclick=function(){location.hash='#/settings'};
+  $('m-add').onclick=function(){location.hash='#/add'};
+  $('m-withdraw').onclick=function(){location.hash='#/withdraw'};
+  $('m-tx').onclick=function(){location.hash='#/tx'};
+  $('m-pw').onclick=function(){location.hash='#/pw'};
+  document.querySelectorAll('[data-back]').forEach(function(b){b.onclick=function(){location.hash='#/settings'}});
+  $('pw-go').onclick=function(){
+    var e=$('pw-err'),n=$('pw-new').value;e.style.color='var(--red)';e.textContent='';
+    if(n!==$('pw-new2').value){e.textContent='New passwords do not match.';return}
+    api('change_password',{p_token:S.token,p_old:$('pw-old').value,p_new:n}).then(function(){
+      ['pw-old','pw-new','pw-new2'].forEach(function(i){$(i).value=''});e.style.color='var(--green)';e.textContent='Password changed successfully.';
+    }).catch(function(x){e.textContent=x.message});
+  };
+  $('s-logout').onclick=function(){logout()};
+
+  setInterval(tick,1000);
+  setInterval(function(){if(S.token&&!document.hidden)refresh().catch(function(){})},15000);
+  try{var m=sessionStorage.getItem('np_msg');if(m){sessionStorage.removeItem('np_msg');toast(m)}}catch(e){}
+  if(S.token)start();else showAuth();
+})();
+</script>
+
+<script id="play2win-gold-ball-game">
+(function(){
+  'use strict';
+  var row=document.getElementById('gold-cup-row');
+  var startBtn=document.getElementById('gold-start');
+  if(!row||!startBtn)return;
+  var msg=document.getElementById('gold-message');
+  var game=document.getElementById('gold-game');
+  var history=document.getElementById('gold-history');
+  var amountInput=document.getElementById('gold-entry-amount');
+  var balanceEl=document.getElementById('gold-wallet-balance');
+  var totalEl=document.getElementById('gold-total-entry');
+  var mult=1,busy=false,activeRound=null,settled=false;
+  var bridge=window.Play2WinGoldBridge;
+  function cups(){return Array.prototype.slice.call(row.querySelectorAll('.gold-cup'));}
+  function session(){return bridge&&bridge.getSession?bridge.getSession():{token:null,role:null,balance:0};}
+  function total(){var n=Math.floor(Number(amountInput.value)||0);return n*mult;}
+  function setBalance(n){var v=Math.max(0,Number(n)||0);balanceEl.textContent=v.toLocaleString('en-IN')+' Coins';var top=document.getElementById('bal');if(top&&!top.dataset.admin||top&&top.dataset.admin!=='1')top.textContent=v.toLocaleString('en-IN')+' Coins';}
+  function renderTotal(){var n=Math.floor(Number(amountInput.value)||0);totalEl.textContent=(n*mult).toLocaleString('en-IN')+' Coins';document.querySelectorAll('[data-gold-mult]').forEach(function(b){b.classList.toggle('active',Number(b.dataset.goldMult)===mult)});}
+  function resetCups(){cups().forEach(function(c,i){c.classList.remove('revealed','is-picked');c.disabled=true;c.dataset.slot=String(i);c.style.left=(i*35)+'%';});}
+  function showHistory(rows){if(!Array.isArray(rows)||!rows.length){history.textContent='No Gold Ball rounds yet.';return;}history.innerHTML=rows.slice(0,8).map(function(h){var won=!!h.won,stake=Number(h.stake||h.total_entry||0),payout=Number(h.payout||0);return '<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.1)"><span>Round '+String(h.id||h.round_id||'')+'</span><strong style="color:'+(won?'#8ff0bd':'#ff9ba8')+'">'+(won?'+'+payout:'-'+stake)+' Coins</strong></div>';}).join('');}
+  function loadState(){var ss=session();if(!ss.token)return Promise.reject(new Error('Please log in with your existing Play2Win account.'));return bridge.api('gold_game_state',{p_token:ss.token}).then(function(st){setBalance(st.balance!==undefined?st.balance:st.credits);showHistory(st.history||[]);return st;});}
+  function init(){resetCups();var ss=session();if(!ss.token){msg.textContent='Please log in to Play2Win first.';startBtn.disabled=true;return;}if(ss.role==='admin'){msg.textContent='Gold Ball is available for player accounts only.';startBtn.disabled=true;return;}startBtn.disabled=true;msg.textContent='Loading shared wallet…';loadState().then(function(){msg.textContent='Choose your entry and press Start Round.';startBtn.disabled=false;}).catch(function(e){msg.textContent=e.message||'Could not load Gold Ball.';startBtn.disabled=false;});}
+  amountInput.addEventListener('input',renderTotal);
+  document.getElementById('gold-multipliers').addEventListener('click',function(e){var b=e.target.closest('[data-gold-mult]');if(!b||busy||activeRound)return;mult=Number(b.dataset.goldMult);renderTotal();});
+  startBtn.addEventListener('click',function(){
+    if(busy||activeRound)return;
+    var ss=session(),base=Math.floor(Number(amountInput.value)||0),entry=base*mult;
+    if(!ss.token){msg.textContent='Your Play2Win session has expired. Please log in again.';return;}
+    if(ss.role==='admin'){msg.textContent='Admin accounts cannot play Gold Ball.';return;}
+    if(!Number.isSafeInteger(base)||base<1||base>10000||!Number.isSafeInteger(entry)||entry>10000){msg.textContent='Enter a valid amount. Total entry must be 10,000 coins or less.';return;}
+    busy=true;startBtn.disabled=true;startBtn.textContent='CREATING ROUND…';msg.textContent='Deducting '+entry.toLocaleString('en-IN')+' coins from your shared wallet…';resetCups();
+    bridge.api('gold_start_round',{p_token:ss.token,p_amount:base,p_multiplier:mult}).then(function(res){activeRound=Number(res.round_id);settled=false;setBalance(res.balance!==undefined?res.balance:res.credits);msg.textContent='Watch the cups shuffle, then choose the cup hiding the Gold Ball.';startBtn.textContent='SHUFFLING…';startBtn.disabled=true;game.classList.add('is-shuffling');var steps=0;var timer=setInterval(function(){var list=cups(),a=Math.floor(Math.random()*3),b=(a+1+Math.floor(Math.random()*2))%3,ca=list[a],cb=list[b],sa=Number(ca.dataset.slot),sb=Number(cb.dataset.slot);ca.dataset.slot=String(sb);cb.dataset.slot=String(sa);ca.style.left=(sb*35)+'%';cb.style.left=(sa*35)+'%';steps++;if(steps>=12){clearInterval(timer);game.classList.remove('is-shuffling');msg.textContent='Choose the cup hiding the Gold Ball.';startBtn.textContent='CHOOSE A CUP';busy=false;cups().forEach(function(c){c.disabled=false;});}},330);}).catch(function(e){busy=false;startBtn.disabled=false;startBtn.textContent='START ROUND';msg.textContent=e.message||'Could not start round.';loadState().catch(function(){});});
+  });
+  cups().forEach(function(c){c.addEventListener('click',function(){
+    if(busy||!activeRound||settled||c.disabled)return;
+    var ss=session(),chosen=Number(c.dataset.slot);busy=true;c.disabled=true;c.classList.add('is-picked');cups().forEach(function(x){x.disabled=true;});msg.textContent='Checking your cup securely…';
+    bridge.api('gold_pick_cup',{p_token:ss.token,p_round_id:activeRound,p_cup:chosen}).then(function(res){settled=true;var winner=Number(res.winning_cup);cups().forEach(function(x){if(Number(x.dataset.slot)===winner)x.classList.add('revealed');});var won=!!res.won,payout=Number(res.payout||0);setBalance(res.balance!==undefined?res.balance:res.credits);var ballCup=cups().find(function(x){return Number(x.dataset.slot)===winner;});var ballCupLabel=ballCup?Number(ballCup.dataset.cup)+1:winner+1;msg.textContent=won?'🎉 WIN · +'+payout.toLocaleString('en-IN')+' Coins':'❌ LOSS · Entry deducted · Ball was under Cup '+ballCupLabel+'.';history.innerHTML='';
+      return bridge.refresh().catch(function(){});
+    }).catch(function(e){msg.textContent=(e.message||'Could not settle this round.')+' Your round is kept open; you can retry your cup selection.';cups().forEach(function(x){x.disabled=false;x.classList.remove('is-picked');});loadState().catch(function(){});}).then(function(){busy=false;if(settled){activeRound=null;startBtn.disabled=false;startBtn.textContent='PLAY AGAIN';}else{startBtn.disabled=true;startBtn.textContent='CHOOSE A CUP';}});
+  });});
+  window.addEventListener('hashchange',function(){if(location.hash==='#/goldball')init();});
+  renderTotal();if(location.hash==='#/goldball')init();
+})();
+</script>
+
+<script id="basic-copy-deterrence-js">
+(function(){
+  'use strict';
+  document.addEventListener('contextmenu',function(e){e.preventDefault();},true);
+  document.addEventListener('dragstart',function(e){if(e.target && e.target.tagName==='IMG') e.preventDefault();},true);
+  document.addEventListener('keydown',function(e){
+    var k=(e.key||'').toLowerCase();
+    if(e.key==='F12' || (e.ctrlKey && e.shiftKey && ['i','j','c'].includes(k)) ||
+       (e.ctrlKey && ['u','s'].includes(k))) { e.preventDefault(); e.stopPropagation(); return false; }
+  },true);
+})();
+</script>
+</body>
+</html>

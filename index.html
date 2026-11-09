@@ -1,2 +1,1000 @@
-<!doctype html>
-<!-- Play2Win finalized HTML will be committed separately -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Play2Win</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0d22">
+<script>try{var _t=localStorage.getItem("np_theme");if(_t)document.documentElement.setAttribute("data-theme",_t)}catch(e){}</script>
+<style>
+:root{--bg:#0b0d22;--panel:rgba(255,255,255,.06);--panel-solid:#171a3c;--ink:#f4f5ff;--mute:#9ba1cc;--line:rgba(255,255,255,.12);--green:#2ee6a0;--red:#ff5d73;--violet:#a98bff;--gold:#ffc94d;--gold2:#ff9f1c;--accent:#ffc94d;--onaccent:#1a1200;--gold-text:#ffc94d;--h1a:#ffc94d;--h1b:#ff7ac6;--sel:#fff;--sel-glow:rgba(255,255,255,.5);--bgA:rgba(124,77,255,.35);--bgB:rgba(0,168,232,.28);--bgC:rgba(255,93,115,.18);--bal-bg:rgba(255,201,77,.12);--bal-line:rgba(255,201,77,.4);--clock-glow:rgba(255,201,77,.45);--timer-bg:linear-gradient(135deg,rgba(124,77,255,.28),rgba(0,168,232,.18));--track:rgba(255,255,255,.1);--chip:rgba(255,255,255,.06);--field:rgba(255,255,255,.07);--soft:rgba(255,255,255,.03);--shadow:rgba(0,0,0,.28);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme="day"]{--bg:#f3f5ff;--panel:rgba(255,255,255,.78);--panel-solid:#fff;--ink:#1b1f3b;--mute:#5f678f;--line:rgba(27,31,59,.13);--green:#0f9f68;--red:#e0344d;--violet:#6d46e8;--gold:#ffb21e;--gold2:#ff8a00;--accent:#ff8a00;--onaccent:#2a1600;--gold-text:#b86a00;--h1a:#ff7a00;--h1b:#d6249f;--sel:#1b1f3b;--sel-glow:rgba(27,31,59,.3);--bgA:rgba(124,77,255,.18);--bgB:rgba(0,168,232,.16);--bgC:rgba(255,93,115,.13);--bal-bg:rgba(255,138,0,.12);--bal-line:rgba(255,138,0,.45);--clock-glow:rgba(255,138,0,.25);--timer-bg:linear-gradient(135deg,rgba(124,77,255,.13),rgba(0,168,232,.12));--track:rgba(27,31,59,.1);--chip:rgba(27,31,59,.05);--field:#fff;--soft:rgba(27,31,59,.03);--shadow:rgba(40,50,120,.14)}
+:root[data-theme="day"] .ball{box-shadow:inset 0 -7px 12px rgba(0,0,0,.18),0 5px 12px rgba(40,50,120,.25)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;line-height:1.4;background:radial-gradient(800px 480px at 90% -8%,var(--bgA),transparent 60%),radial-gradient(700px 480px at -10% 8%,var(--bgB),transparent 60%),radial-gradient(600px 500px at 50% 110%,var(--bgC),transparent 60%),var(--bg);background-attachment:fixed}
+.wrap{max-width:520px;margin:0 auto;padding:16px 14px 48px}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.top h1{margin:0;font-size:1.6rem;font-weight:900;letter-spacing:.02em;background:linear-gradient(90deg,var(--h1a),var(--h1b) 70%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bal{font-weight:800;font-size:1rem;color:var(--gold-text);background:var(--bal-bg);border:1px solid var(--bal-line);padding:6px 13px;border-radius:999px;white-space:nowrap}
+.bal:empty{display:none}
+.note{font-size:.8rem;color:var(--mute);margin:0 0 12px}
+.card,.timer,.nums,.menu-btn,table{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;box-shadow:0 8px 24px var(--shadow)}
+.timer{background:var(--timer-bg);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 24px var(--shadow)}
+.timer small{color:var(--mute);display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
+.timer b{font-size:1.1rem}
+.clock{font-variant-numeric:tabular-nums;font-size:2.2rem;font-weight:900;letter-spacing:.05em;color:var(--gold-text);text-shadow:0 0 18px var(--clock-glow)}
+.clock.lock{color:var(--red);text-shadow:0 0 18px rgba(255,93,115,.6);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+.bar{height:6px;border-radius:99px;background:var(--track);margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--gold),var(--red));transition:width 1s linear}
+.row{display:grid;gap:10px;margin-top:14px}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c2{grid-template-columns:repeat(2,1fr)}
+.pick{border:0;border-radius:14px;padding:13px 4px;font-weight:800;color:#fff;box-shadow:0 6px 16px var(--shadow),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .12s,box-shadow .12s}
+.pick:active{transform:scale(.96)}
+.pick.green{background:linear-gradient(160deg,#35f0a8,#0f9d6a)}
+.pick.violet{background:linear-gradient(160deg,#b79cff,#6a3fe0)}
+.pick.red{background:linear-gradient(160deg,#ff7a8c,#d8324b)}
+.pick.big{background:linear-gradient(160deg,#ffc14d,#ff7a1c)}
+.pick.small{background:linear-gradient(160deg,#5ccbff,#3a6bff)}
+.pick.sel{outline:3px solid var(--sel);outline-offset:2px;box-shadow:0 0 22px var(--sel-glow)}
+.pick small{display:block;font-weight:600;opacity:.9;font-size:.72rem}
+.nums{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 8px 24px var(--shadow)}
+.ball{position:relative;aspect-ratio:1;border-radius:50%;border:0;font-size:1.3rem;font-weight:900;color:#fff;display:grid;place-items:center;text-shadow:0 1px 3px rgba(0,0,0,.4);box-shadow:inset 0 -7px 12px rgba(0,0,0,.28),0 5px 12px rgba(0,0,0,.4);transition:transform .12s}
+.ball::after{content:"";position:absolute;top:9%;left:17%;width:40%;height:26%;border-radius:50%;background:rgba(255,255,255,.4);filter:blur(1px)}
+.ball:active{transform:scale(.9)}
+.ball.sel{outline:3px solid var(--sel);outline-offset:3px;box-shadow:0 0 22px var(--sel-glow),inset 0 -7px 12px rgba(0,0,0,.28)}
+.amt{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.amt button{flex:1;min-width:52px;padding:9px 0;border-radius:10px;border:1px solid var(--line);background:var(--chip);font-weight:700;transition:background .15s}
+.amt button.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onaccent);border-color:transparent}
+.place{width:100%;margin-top:14px;padding:15px;border:0;border-radius:14px;background:linear-gradient(135deg,#ffd45e,var(--gold2));color:var(--onaccent);font-weight:900;font-size:1.02rem;letter-spacing:.02em;box-shadow:0 8px 22px rgba(255,159,28,.35);transition:transform .12s}
+.place:active:not(:disabled){transform:scale(.98)}
+.place:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.logout{background:linear-gradient(135deg,#ff7a8c,#d8324b);color:#fff;box-shadow:0 8px 22px rgba(216,50,75,.35)}
+h2{font-size:1rem;font-weight:800;margin:22px 0 10px;color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:.86rem;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th,td{padding:10px 6px;text-align:center;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:0}
+th{color:var(--mute);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0;background:var(--panel-solid);z-index:1}
+.dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin:0 2px;box-shadow:0 0 8px currentColor}
+.scroll{overflow:auto;max-height:calc(100vh - 240px);max-height:calc(100dvh - 240px);min-height:140px;border:1px solid var(--line);border-radius:14px;background:var(--soft);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(130,135,170,.5) transparent}
+.scroll table{border:0;border-radius:0;min-width:300px}
+.empty{color:var(--mute);font-size:.86rem;padding:10px 0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:linear-gradient(135deg,#ffd45e,var(--gold2));color:var(--onaccent);padding:13px 20px;border-radius:14px;font-weight:800;max-width:90%;text-align:center;display:none;z-index:5;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.show{display:block;animation:pop .25s ease-out}
+@keyframes pop{from{transform:translate(-50%,12px);opacity:0}}
+.nav{display:flex;gap:6px;margin:0 0 6px;flex-wrap:wrap;padding:5px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.nav a{flex:1;text-align:center;padding:10px 6px;border-radius:12px;color:var(--mute);text-decoration:none;font-size:.86rem;font-weight:700;transition:background .15s,color .15s}
+.nav a.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onaccent);box-shadow:0 4px 14px rgba(255,159,28,.35)}
+select,input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--ink);font:inherit;margin:6px 0}
+select option{background:var(--panel-solid);color:var(--ink)}
+input::placeholder{color:var(--mute)}
+label{display:block}
+.err{color:var(--red);font-size:.86rem;min-height:1.2em}
+.hide{display:none!important}
+#v-auth{margin-top:8vh;padding:22px}
+#v-auth h2{margin-top:0;font-size:1.25rem}
+.gear{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:grid;place-items:center;padding:0}
+.srow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.menu-btn{width:100%;display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);font-weight:700;font-size:1rem;text-align:left}
+.mini{padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:var(--chip);font-size:.8rem;font-weight:600}
+.mini.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onaccent);border-color:transparent}
+.reset{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--mute);font-size:.8rem}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.round-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(5,8,25,.76);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.round-overlay.hide{display:none!important}
+.round-modal{width:min(390px,94vw);padding:26px 22px 22px;text-align:center;border:1px solid rgba(255,255,255,.18);border-radius:26px;background:linear-gradient(155deg,#252947,#15182d);box-shadow:0 22px 80px rgba(0,0,0,.48);color:#fff;animation:roundPop .22s ease-out}
+.round-modal-kicker{font-size:.78rem;font-weight:900;letter-spacing:.18em;color:#ffc34d}
+.round-modal-title{margin-top:10px;font-size:1.15rem;font-weight:800}
+.round-result-label{margin-top:6px;color:#c5c9e4;font-weight:700}
+.round-result-number{display:grid;place-items:center;width:116px;height:116px;margin:14px auto 8px;border-radius:50%;font-size:4.2rem;font-weight:1000;color:#fff;background:linear-gradient(145deg,#ffbd48,#f07819);box-shadow:0 0 0 8px rgba(255,190,70,.12),0 12px 35px rgba(0,0,0,.35)}
+.round-result-number.hide{display:none}
+.round-modal-foot{margin-top:14px;color:#aeb5d7;font-size:.82rem}
+@keyframes roundPop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+.win-fx-layer{position:fixed;inset:0;z-index:10020;pointer-events:none;overflow:hidden}
+.win-fx-coin{position:absolute;left:50%;top:54%;font-size:clamp(24px,5vw,42px);filter:drop-shadow(0 5px 12px rgba(255,190,50,.45));animation:coinFlyUp 1.45s cubic-bezier(.18,.72,.25,1) forwards;will-change:transform,opacity}
+.win-fx-total{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.7);padding:12px 20px;border:1px solid rgba(255,218,112,.65);border-radius:18px;background:linear-gradient(135deg,#3c2a0b,#171a35);color:#ffd15c;font-size:clamp(22px,6vw,34px);font-weight:1000;white-space:nowrap;box-shadow:0 12px 40px rgba(0,0,0,.4);animation:winTotalPop 1.7s ease-out forwards}
+@keyframes coinFlyUp{0%{opacity:0;transform:translate(-50%,0) scale(.45) rotate(0deg)}12%{opacity:1}75%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-1 * var(--dy))) scale(.72) rotate(var(--rot))}}
+@keyframes winTotalPop{0%{opacity:0;transform:translate(-50%,-30%) scale(.55)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}30%{transform:translate(-50%,-50%) scale(1)}78%{opacity:1}100%{opacity:0;transform:translate(-50%,-95%) scale(.9)}}
+.balance-win-pulse{animation:balanceWinPulse .9s ease-in-out 2}
+@keyframes balanceWinPulse{0%,100%{filter:none;transform:scale(1)}50%{filter:drop-shadow(0 0 12px #ffc84d);transform:scale(1.13);color:#ffd15c}}
+
+.top{gap:10px}
+.top-brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand-crown{width:30px;height:30px;flex:0 0 auto;filter:drop-shadow(0 2px 7px rgba(255,201,77,.35))}
+.top h1{margin:0;letter-spacing:-.7px;font-size:clamp(1.35rem,4.5vw,1.9rem);font-weight:1000;background:linear-gradient(100deg,#ffd05a 0%,#ff9f35 45%,#ff79c6 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bal{display:flex;align-items:center;gap:7px;padding:7px 12px;min-height:38px;font-weight:900;letter-spacing:.1px;background:linear-gradient(135deg,rgba(255,201,77,.17),rgba(255,145,30,.09));border:1px solid rgba(255,201,77,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 4px 16px rgba(255,175,35,.08)}
+.bal:not(:empty)::before{content:"🪙";font-size:1.05rem;line-height:1}
+.bal:not(:empty)::after{content:"👛";font-size:1rem;line-height:1;margin-left:2px}
+.bal[data-admin="1"]::before,.bal[data-admin="1"]::after{display:none}
+@media(max-width:420px){.top{margin-bottom:12px}.brand-crown{width:25px;height:25px}.top h1{font-size:1.3rem}.bal{font-size:.88rem;padding:6px 9px;gap:5px}}
+
+
+.round-id-wrap{min-width:0}
+.round-id-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+#period{display:block;font-size:clamp(1.05rem,4.4vw,1.48rem);font-weight:1000;letter-spacing:.15px;line-height:1.2;overflow-wrap:anywhere}
+.round-live{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;border:1px solid rgba(46,230,160,.28);background:rgba(46,230,160,.09);color:#48e9ae;font-size:.66rem;font-weight:900;letter-spacing:.7px;white-space:nowrap}
+.round-live i{width:7px;height:7px;border-radius:50%;background:#2ee6a0;box-shadow:0 0 8px rgba(46,230,160,.8)}
+@media(max-width:420px){.round-id-line{gap:8px}#period{font-size:clamp(1rem,4.2vw,1.25rem)}.round-live{font-size:.6rem;padding:3px 7px}}
+
+
+/* Compact Play2Win game launcher */
+.game-launcher{margin-top:8px}
+.game-launcher-head{margin:8px 2px 14px}
+.game-launcher-head h2{margin:0 0 4px;font-size:1.12rem}
+.game-launcher-head p{margin:0;color:var(--mute);font-size:.78rem}
+.game-launch-grid{display:grid;grid-template-columns:repeat(3,minmax(0,85px));justify-content:space-between;gap:18px 10px;padding:8px 2px}
+.game-launch-item{width:85px;text-align:center;cursor:pointer}
+.game-launch-box{width:85px;height:85px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,rgba(255,201,77,.16),var(--panel));box-shadow:0 7px 18px var(--shadow),inset 0 1px 0 rgba(255,255,255,.10);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:var(--ink);transition:transform .14s,border-color .14s,box-shadow .14s}
+.game-launch-item:active .game-launch-box{transform:scale(.94);border-color:var(--gold);box-shadow:0 0 18px var(--clock-glow)}
+.game-launch-icon{font-size:27px;line-height:1.1;filter:drop-shadow(0 3px 7px rgba(255,190,60,.22))}
+.game-launch-name{font-size:.73rem;font-weight:900;line-height:1.1}
+.game-launch-desc{margin-top:6px;color:var(--mute);font-size:.68rem;font-weight:700;letter-spacing:.02em}
+.game-launch-item:focus-visible{outline:0}
+.game-launch-item:focus-visible .game-launch-box{outline:3px solid var(--violet);outline-offset:3px}
+@media(max-width:360px){.game-launch-grid{grid-template-columns:repeat(3,80px)}.game-launch-item,.game-launch-box{width:80px}.game-launch-box{height:80px}}
+
+
+/* Play2Win game-first dashboard */
+.game-launcher{margin:12px 0 0}
+.game-launcher-head{margin:14px 4px 20px}
+.game-eyebrow{display:inline-block;color:var(--gold-text);font-size:.68rem;font-weight:1000;letter-spacing:2px;margin-bottom:8px}
+.game-launcher-head h2{font-size:1.35rem;margin:0 0 5px}
+.game-launcher-head p{font-size:.82rem;color:var(--mute);margin:0}
+.game-launch-grid{display:flex;justify-content:center;padding:8px 4px 18px}
+.game-launch-item{display:block;width:100%;max-width:340px;padding:0;border:0;background:none;text-align:inherit}
+.game-launch-box{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;width:100%;min-height:220px;padding:24px 18px;border-radius:26px;border:1px solid rgba(255,201,77,.48);color:var(--ink);background:radial-gradient(circle at 50% 0%,rgba(255,201,77,.25),transparent 58%),linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.025));box-shadow:0 16px 34px var(--shadow),inset 0 1px 0 rgba(255,255,255,.18);transition:transform .18s,border-color .18s,box-shadow .18s}
+.game-launch-box:before{content:"";position:absolute;inset:9px;border:1px solid rgba(255,201,77,.16);border-radius:19px;z-index:-1}
+.game-launch-item:active .game-launch-box{transform:scale(.975);border-color:var(--gold);box-shadow:0 0 28px var(--clock-glow)}
+.game-launch-icon{display:grid;place-items:center;width:82px;height:82px;border-radius:24px;font-size:43px;background:linear-gradient(145deg,#ffe5a1,#ffad26);box-shadow:0 10px 25px rgba(255,159,28,.28),inset 0 2px 0 rgba(255,255,255,.65)}
+.game-launch-name{font-size:1.05rem;font-weight:1000;letter-spacing:1.2px}
+.game-launch-sub{font-size:.68rem;font-weight:800;letter-spacing:1.5px;color:var(--mute)}
+.game-launch-cta{display:flex;align-items:center;gap:9px;margin-top:5px;padding:10px 25px;border-radius:999px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onaccent);font-size:.78rem;font-weight:1000;letter-spacing:.8px;box-shadow:0 7px 18px rgba(255,159,28,.25)}
+.game-subnav{display:flex;gap:7px;margin:0 0 14px;padding:5px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
+.game-subnav button{flex:1;min-width:0;padding:9px 5px;border:0;border-radius:10px;background:transparent;color:var(--mute);font-size:.76rem;font-weight:850}
+.game-subnav button.active{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onaccent);box-shadow:0 4px 12px rgba(255,159,28,.2)}
+@media(prefers-reduced-motion:reduce){.game-launch-box{transition:none}}
+
+
+/* Clean home screen: weekly reward card + icon-only game launcher */
+.game-launcher,.game-launcher-head{display:none!important}
+.daily-reward-card{margin:12px 0 8px;padding:16px 14px 12px;border-radius:20px;border:1px solid rgba(255,190,65,.42);background:radial-gradient(circle at 100% 0%,rgba(255,184,55,.18),transparent 42%),linear-gradient(145deg,var(--panel),rgba(255,255,255,.025));box-shadow:0 12px 28px var(--shadow),inset 0 1px 0 rgba(255,255,255,.12)}
+.daily-reward-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+.daily-reward-heading h2{margin:0 0 3px;font-size:1.02rem;font-weight:950}
+.daily-reward-heading p{margin:0;color:var(--mute);font-size:.72rem}
+.reward-calendar-icon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#ffe7a8,#ffad2e);font-size:22px;box-shadow:0 6px 16px rgba(255,159,28,.2)}
+.daily-reward-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.daily-reward-day{min-width:0;min-height:78px;padding:9px 3px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:13px;border:1px solid var(--line);background:var(--soft);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.daily-reward-day:nth-child(n+5){background:linear-gradient(145deg,rgba(255,201,77,.12),var(--soft))}
+.daily-reward-day span{font-size:.62rem;letter-spacing:.8px;font-weight:900;color:var(--mute)}
+.daily-reward-day b{font-size:1.15rem;line-height:1.25;font-weight:1000;color:var(--gold-text)}
+.daily-reward-day small{font-size:.61rem;color:var(--mute)}
+.daily-reward-foot{margin:10px 2px 0;text-align:center;font-size:.67rem;color:var(--mute)}
+.game-launch-grid{display:flex;justify-content:center;align-items:center;padding:18px 4px 24px}
+.game-launch-item{width:auto;max-width:none;padding:0;border:0;background:transparent;display:grid;place-items:center}
+.game-launch-icon{width:92px;height:92px;border-radius:27px;font-size:49px;cursor:pointer;display:grid;place-items:center;background:linear-gradient(145deg,#ffe5a1,#ffad26);box-shadow:0 12px 28px rgba(255,159,28,.3),inset 0 2px 0 rgba(255,255,255,.7);transition:transform .16s,box-shadow .16s}
+.game-launch-item:active .game-launch-icon{transform:scale(.93);box-shadow:0 0 0 5px rgba(255,190,60,.15),0 8px 20px rgba(255,159,28,.25)}
+.game-launch-item:focus-visible{outline:3px solid var(--violet);outline-offset:5px;border-radius:30px}
+@media(max-width:360px){.daily-reward-card{padding:13px 10px 10px}.daily-reward-grid{gap:6px}.daily-reward-day{min-height:72px}.game-launch-icon{width:84px;height:84px;font-size:45px}}
+
+
+/* Interactive daily check-in rewards */
+.daily-reward-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.daily-reward-day{appearance:none;width:100%;font:inherit;cursor:pointer;position:relative;transition:transform .15s,border-color .15s,background .15s,box-shadow .15s}
+.daily-reward-day:active{transform:scale(.96)}
+.daily-reward-day:disabled{cursor:default;opacity:.7}
+.daily-reward-day.is-current{border:1.5px solid var(--gold);background:linear-gradient(145deg,rgba(255,201,77,.28),var(--soft));box-shadow:0 0 0 2px rgba(255,190,60,.12),0 7px 16px rgba(255,159,28,.12)}
+.daily-reward-day.is-claimed{border-color:rgba(46,190,130,.48);background:linear-gradient(145deg,rgba(46,190,130,.14),var(--soft))}
+.daily-reward-day.is-locked{opacity:.52}
+.daily-reward-day small{font-weight:800}
+.daily-reward-day.is-claimed small{color:var(--green)}
+.daily-reward-day.is-current small{color:var(--gold-text)}
+.daily-reward-foot{min-height:18px}
+@media(max-width:360px){.daily-reward-grid{gap:5px}.daily-reward-day{min-height:68px}.daily-reward-day b{font-size:1.02rem}}
+
+
+/* Dedicated Rewards tab layout */
+#v-rewards{padding-top:4px}
+#v-rewards .daily-reward-card{margin-top:8px}
+#v-rewards .daily-reward-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#v-rewards .daily-reward-day{min-height:88px}
+@media(max-width:360px){#v-rewards .daily-reward-day{min-height:78px}}
+
+
+
+
+
+/* Home game icon sizing */
+#v-home .game-launch-grid{display:flex!important;justify-content:flex-start!important;align-items:flex-start!important;gap:14px!important;padding:12px 2px 18px!important}
+#v-home .game-launch-item{display:grid!important;place-items:center!important;width:64px!important;max-width:64px!important;padding:0!important;border:0!important;background:transparent!important}
+#v-home .game-launch-icon{width:64px!important;height:64px!important;min-width:64px!important;min-height:64px!important;border-radius:17px!important;font-size:32px!important;line-height:1!important;display:grid!important;place-items:center!important}
+@media(max-width:360px){#v-home .game-launch-item,#v-home .game-launch-icon{width:58px!important;max-width:58px!important;min-width:58px!important;height:58px!important;min-height:58px!important}#v-home .game-launch-icon{font-size:29px!important}}
+
+
+/* Premium attractive home game icons */
+#v-home .game-launch-grid{
+  display:flex!important;justify-content:center!important;align-items:flex-start;
+  gap:26px!important;padding:16px 4px 24px!important;
+}
+#v-home .game-launch-item{
+  width:112px!important;max-width:112px!important;padding:0!important;
+  border:0!important;background:transparent!important;text-align:center!important;
+}
+#v-home .game-launch-box{
+  position:relative;isolation:isolate;overflow:hidden;
+  width:104px!important;height:112px!important;min-height:112px!important;
+  margin:0 auto;padding:10px!important;border-radius:25px!important;
+  display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:9px!important;
+  border:1px solid rgba(255,255,255,.48)!important;
+  box-shadow:0 12px 26px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.7)!important;
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+#v-home .game-launch-box:before{
+  content:"";position:absolute;inset:5px;border:1px solid rgba(255,255,255,.32);
+  border-radius:20px;pointer-events:none;z-index:-1;
+}
+#v-home .game-launch-box:after{
+  content:"";position:absolute;top:-38%;left:-35%;width:85%;height:75%;
+  transform:rotate(28deg);background:linear-gradient( to bottom,rgba(255,255,255,.45),rgba(255,255,255,0));
+  border-radius:50%;pointer-events:none;z-index:-1;
+}
+#v-home .game-launch-item:active .game-launch-box{
+  transform:translateY(2px) scale(.96);filter:brightness(1.06);
+}
+#v-home .game-launch-icon{
+  position:relative;width:66px!important;height:66px!important;min-width:66px;
+  display:flex!important;align-items:center;justify-content:center;
+  margin:0!important;font-size:initial!important;filter:drop-shadow(0 5px 5px rgba(0,0,0,.24))!important;
+}
+#v-home .game-launch-name{
+  display:block;font-size:12px!important;line-height:1.05;font-weight:950!important;
+  letter-spacing:.25px;color:var(--ink)!important;white-space:nowrap;
+  text-shadow:0 1px 5px rgba(0,0,0,.22);
+}
+#v-home .game-launch-item:focus-visible{outline:0}
+#v-home .game-launch-item:focus-visible .game-launch-box{outline:3px solid var(--violet);outline-offset:4px}
+
+/* Number Game: glossy blue number tile */
+#v-home .game-launch-box:has(.number-game-icon){
+  background:radial-gradient(circle at 25% 12%,#8fe3ff 0,#369dff 34%,#1762d5 72%,#103d9d 100%)!important;
+}
+#v-home .number-game-icon{
+  width:62px!important;height:62px!important;border-radius:17px!important;
+  display:grid!important;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+  place-items:center;gap:2px!important;padding:7px!important;
+  border:2px solid rgba(255,255,255,.92)!important;
+  background:linear-gradient(145deg,#0d4ca9,#168de9 55%,#073b91)!important;
+  box-shadow:inset 0 2px 7px rgba(255,255,255,.35),0 5px 12px rgba(0,26,90,.35);
+  color:#fff!important;font-size:17px!important;font-weight:1000!important;line-height:1!important;
+  text-shadow:0 2px 3px rgba(0,0,0,.35);
+}
+#v-home .number-game-icon span{
+  display:block!important;font-size:17px!important;line-height:1!important;
+}
+
+/* Gold Ball: emerald glass cup with glowing golden ball */
+#v-home .game-launch-box:has(.goldball-launch-icon){
+  background:radial-gradient(circle at 50% 0%,#fff0b2 0,#ffc94d 36%,#f39a16 76%,#bd650b 100%)!important;
+}
+#v-home .goldball-launch-icon{
+  width:70px!important;height:70px!important;overflow:visible!important;
+  border-radius:20px;
+  background:radial-gradient(circle at 50% 20%,rgba(255,255,255,.38),rgba(255,255,255,0) 62%);
+}
+#v-home .launch-cup{
+  position:absolute;left:12px;right:12px;bottom:5px;height:43px;
+  border-radius:8px 8px 17px 17px;
+  clip-path:polygon(12% 0,88% 0,100% 100%,0 100%);
+  background:linear-gradient(100deg,#00695f 0%,#00d9b8 24%,#8bfff0 39%,#009c87 57%,#004e49 100%);
+  border:2px solid rgba(213,255,246,.95);
+  box-shadow:inset 0 3px 8px rgba(255,255,255,.75),0 8px 12px rgba(0,54,47,.35);
+}
+#v-home .launch-cup:after{
+  content:"";position:absolute;left:10%;right:10%;top:1px;height:8px;border-radius:50%;
+  background:linear-gradient(180deg,#fff,#9affee 70%,#22bfa9);
+  box-shadow:0 2px 4px rgba(0,0,0,.18);
+}
+#v-home .launch-ball{
+  position:absolute;z-index:3;top:4px;left:27px;width:25px;height:25px;border-radius:50%;
+  background:radial-gradient(circle at 29% 22%,#fffbd0 0,#ffe76b 22%,#ffb900 58%,#d76b00 100%);
+  box-shadow:0 0 0 3px rgba(255,236,145,.2),0 0 15px 5px rgba(255,207,48,.75),0 5px 8px rgba(104,54,0,.35);
+}
+@media(max-width:360px){
+  #v-home .game-launch-grid{gap:16px!important}
+  #v-home .game-launch-item{width:100px!important}
+  #v-home .game-launch-box{width:96px!important;height:106px!important;min-height:106px!important}
+}
+
+</style>
+
+<style id="basic-copy-deterrence">
+html,body,.app-shell{ -webkit-user-select:none!important; user-select:none!important; }
+input,textarea,[contenteditable="true"]{ -webkit-user-select:text!important; user-select:text!important; }
+img{ -webkit-user-drag:none; user-drag:none; }
+</style>
+<style id="gold-ball-game-style">
+.gold-game{margin-top:12px;padding:16px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(155deg,rgba(0,65,66,.92),rgba(3,23,34,.98));color:#efffff;box-shadow:0 16px 36px rgba(0,0,0,.28);overflow:hidden}
+.gold-game-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.gold-game-head h2{margin:0;color:#f4ffff;font-size:1.25rem}.gold-game-head p{margin:4px 0 0;color:#a7d9d7;font-size:.78rem}
+.gold-auto{font-size:.7rem;font-weight:900;color:#082d2b;background:#c9f4e8;border-radius:99px;padding:7px 10px;white-space:nowrap}
+.gold-stage{position:relative;min-height:390px;margin-top:16px;border-radius:18px;background:radial-gradient(ellipse at 50% 75%,rgba(0,190,170,.18),transparent 65%),#06272c;overflow:hidden;padding:20px 8px}
+.gold-title{text-align:center;font-weight:1000;letter-spacing:.08em;font-size:1.7rem;color:#f3ffff}.gold-sub{text-align:center;color:#ffcf54;font-weight:900;margin-top:2px;letter-spacing:.08em}
+.gold-cup-row{position:relative;height:220px;max-width:420px;margin:38px auto 0}
+.gold-cup{position:absolute;top:18px;width:30%;height:175px;border:0;background:transparent;padding:0;transition:left .42s cubic-bezier(.2,.8,.2,1),transform .25s;z-index:2}
+.gold-cup:disabled{cursor:default}.gold-cup-shape{position:absolute;left:8%;right:8%;bottom:3px;height:132px;background:linear-gradient(100deg,#007d70,#00e0c2 25%,#008d80 48%,#004f4b 78%,#00b9a6);clip-path:polygon(19% 0,81% 0,100% 100%,0 100%);border:2px solid #00f2cf;filter:drop-shadow(0 8px 7px rgba(0,0,0,.55));border-radius:10px 10px 24px 24px}
+.gold-cup-shape:before{content:"";position:absolute;left:8%;right:8%;top:-8px;height:22px;border-radius:50%;background:radial-gradient(ellipse at 40% 35%,#f1ffff,#8bd7d1 70%,#267f7a);border:2px solid rgba(255,255,255,.55)}
+.gold-cup-shape:after{content:"";position:absolute;left:20%;top:16px;width:9%;height:98px;background:rgba(255,255,255,.62);filter:blur(4px);border-radius:99px}
+.gold-cup:active{transform:scale(.96)}.gold-cup.is-picked .gold-cup-shape{filter:drop-shadow(0 0 12px #ffd24e)}
+.gold-ball{position:absolute;left:50%;top:32px;transform:translateX(-50%);width:31px;height:31px;border-radius:50%;background:radial-gradient(circle at 32% 25%,#fff8bd,#ffcf30 38%,#d98200 78%);box-shadow:0 0 20px rgba(255,207,48,.85);opacity:0;transition:top .28s,opacity .2s;z-index:1}
+.gold-cup.revealed .gold-ball{opacity:1;top:10px}.gold-cup.revealed .gold-cup-shape{transform:translateY(-24px)}
+.gold-cup-label{position:absolute;bottom:-24px;left:0;right:0;text-align:center;font-size:.75rem;color:#c3e9e5;font-weight:800}
+.gold-message{text-align:center;min-height:24px;margin:14px 0 4px;color:#d4efeb;font-weight:700;font-size:.9rem}
+.gold-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:12px}.gold-controls button{border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(255,255,255,.08);color:#efffff;padding:11px 2px;font-weight:900;font-size:.82rem}.gold-controls button.active{background:linear-gradient(135deg,#ffd85e,#ff9d17);color:#2a1a00;border-color:transparent}
+.gold-start{width:100%;margin-top:12px;padding:14px;border:0;border-radius:14px;background:linear-gradient(135deg,#ffdc65,#ff9812);color:#2a1900;font-weight:1000;font-size:1rem}.gold-start:disabled{opacity:.55}
+.gold-history{display:none!important}
+.gold-wallet-bar,.gold-total-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px;border:1px solid rgba(255,201,77,.28);border-radius:12px;background:rgba(255,201,77,.08);color:#f8e8bd;font-size:.84rem}
+.gold-wallet-bar strong,.gold-total-line strong{color:#ffda73;font-weight:1000}
+.gold-entry-label{display:block;margin-top:12px;color:#d4efeb;font-size:.84rem;font-weight:800}
+#gold-entry-amount{margin:6px 0 8px;background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.2);color:#fff}
+#gold-multipliers{grid-template-columns:repeat(3,minmax(0,1fr));margin:6px 0 10px}
+.gold-total-line{margin-top:8px}
+@keyframes goldPulse{50%{filter:brightness(1.35)}}.gold-game.is-shuffling .gold-title{animation:goldPulse .4s infinite}
+@media(max-width:370px){.gold-stage{min-height:290px}.gold-cup-row{height:135px}.gold-cup{height:100px}.gold-cup-shape{height:74px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="top-brand">
+    <svg class="brand-crown" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <path d="M8 18l13 12L31 8l11 22 14-12-5 31H13L8 18Z" fill="#FFC94D" stroke="#FFD96B" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M14 54h38" stroke="#FFB52E" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="8" cy="16" r="5" fill="#FFD96B"/><circle cx="31" cy="7" r="5" fill="#FFD96B"/><circle cx="56" cy="16" r="5" fill="#FFD96B"/>
+    </svg>
+    <h1>Play2Win</h1>
+  </div><div style="display:flex;align-items:center;gap:10px"><div class="bal" id="bal"></div><button class="gear hide" id="gear" aria-label="Settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div></div>
+
+  <section id="v-auth" class="hide card">
+    <h2 id="auth-title" style="margin-top:0">Log in</h2>
+    <label>User ID<input id="a-id" autocomplete="username"></label>
+    <label>Password<input id="a-pw" type="password" autocomplete="current-password"></label>
+    <div class="err" id="a-err"></div>
+    <button class="place" id="a-go" style="margin-top:4px">Log in</button>
+    <div style="text-align:center;margin:12px 0;color:var(--mute);font-size:.8rem">— OR —</div>
+    <button class="place" id="google-login" type="button" style="margin-top:0;background:#fff;color:#222;box-shadow:none">Continue with Google</button>
+    <div class="note" id="google-msg" style="margin-top:8px">New users can register securely using their Google Account.</div>
+  </section>
+  <div id="app" class="hide">
+    <nav class="nav" id="nav"></nav>
+
+
+    <section id="v-home" class="hide">
+      <div class="game-launch-grid">
+        <button class="game-launch-item" type="button" data-open-route="play" aria-label="Open Number Game">
+          <span class="game-launch-box" aria-hidden="true">
+            <span class="game-launch-icon number-game-icon"><span>1 2</span><span>3 4</span></span>
+            <span class="game-launch-name">Number Game</span>
+          </span>
+        </button>
+        <button class="game-launch-item" type="button" data-open-route="goldball" aria-label="Open Gold Ball Challenge">
+          <span class="game-launch-box" aria-hidden="true">
+            <span class="game-launch-icon goldball-launch-icon"><span class="launch-ball"></span><span class="launch-cup"></span></span>
+            <span class="game-launch-name">Gold Ball</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <section id="v-goldball" class="hide">
+      <div class="gold-game" id="gold-game">
+        <div class="gold-game-head"><div><h2>Gold Ball Challenge</h2><p>Watch the cups · Follow the gold ball</p></div><span class="gold-auto">SKILL CHALLENGE</span></div>
+        <div class="gold-stage">
+          <div class="gold-sub">FOLLOW THE GOLD BALL</div>
+          <div class="gold-cup-row" id="gold-cup-row">
+            <button class="gold-cup" type="button" data-cup="0" aria-label="Choose cup 1" style="left:0%"><span class="gold-ball"></span><span class="gold-cup-shape"></span><span class="gold-cup-label">CUP 1</span></button>
+            <button class="gold-cup" type="button" data-cup="1" aria-label="Choose cup 2" style="left:35%"><span class="gold-ball"></span><span class="gold-cup-shape"></span><span class="gold-cup-label">CUP 2</span></button>
+            <button class="gold-cup" type="button" data-cup="2" aria-label="Choose cup 3" style="left:70%"><span class="gold-ball"></span><span class="gold-cup-shape"></span><span class="gold-cup-label">CUP 3</span></button>
+          </div>
+          <div class="gold-message" id="gold-message" aria-live="polite">Press Start Round to reveal the ball, then follow the cups.</div>
+        </div>
+        <span id="gold-wallet-balance" hidden aria-hidden="true">— Coins</span>
+        <label class="gold-entry-label" for="gold-entry-amount">Entry amount (coins)</label>
+        <input id="gold-entry-amount" type="number" min="1" max="10000" step="1" value="10" inputmode="numeric">
+        <div class="gold-controls" id="gold-multipliers" aria-label="Entry multiplier"><button type="button" data-gold-mult="1" class="active">×1</button><button type="button" data-gold-mult="5">×5</button><button type="button" data-gold-mult="10">×10</button></div>
+        <div class="gold-total-line"><span>Total entry</span><strong id="gold-total-entry">10 Coins</strong></div>
+        <button class="gold-start" id="gold-start" type="button">START ROUND</button>
+        <div class="gold-history" id="gold-history">No Gold Ball rounds yet.</div>
+      </div>
+    </section>
+
+
+    <section id="v-rewards" class="hide">
+      <section class="daily-reward-card" aria-label="Daily check-in rewards">
+        <div class="daily-reward-heading">
+          <div>
+            <h2>Daily Check Rewards</h2>
+            <p>Claim daily · Miss a day and start again</p>
+          </div>
+          <span class="reward-calendar-icon" aria-hidden="true">🎁</span>
+        </div>
+        <div class="daily-reward-grid" id="daily-reward-grid">
+          <button class="daily-reward-day" type="button" data-reward-day="1"><span>DAY 1</span><b>1 Coin</b><small>Claim</small></button>
+          <button class="daily-reward-day" type="button" data-reward-day="2"><span>DAY 2</span><b>2 Coins</b><small>Claim</small></button>
+          <button class="daily-reward-day" type="button" data-reward-day="3"><span>DAY 3</span><b>3 Coins</b><small>Claim</small></button>
+          <button class="daily-reward-day" type="button" data-reward-day="4"><span>DAY 4</span><b>5 Coins</b><small>Claim</small></button>
+          <button class="daily-reward-day" type="button" data-reward-day="5"><span>DAY 5</span><b>10 Coins</b><small>Claim</small></button>
+        </div>
+        <p class="daily-reward-foot" id="daily-reward-status" aria-live="polite">Loading your check-in status…</p>
+      </section>
+
+    </section>
+
+    <section id="v-play">
+<div class="game-subnav" aria-label="Game menu"><button type="button" data-open-route="play" class="active">🎮 Game</button><button type="button" data-open-route="results" class="">🏆 Results</button><button type="button" data-open-route="mine" class="">📜 My History</button></div>
+
+      <!-- Result popup is scoped inside Play only; other views cannot display it. -->
+  <div id="round-overlay" class="round-overlay hide" role="status" aria-live="assertive">
+    <div class="round-modal">
+      <div class="round-modal-kicker" id="round-modal-kicker">ROUND RESULT</div>
+      <div class="round-modal-title" id="round-modal-title">Winning number</div>
+      <div class="round-result-label" id="round-result-label">Result declared</div>
+      <div class="round-result-number hide" id="round-result-number">–</div>
+      <div class="round-modal-foot" id="round-modal-foot">Round complete</div>
+    </div>
+  </div>
+
+      <div class="timer">
+        <div class="round-id-wrap"><small>ROUND</small><div class="round-id-line"><b id="period">–</b><span class="round-live"><i></i> LIVE</span></div></div>
+        <div style="text-align:right"><small id="state">Betting is open</small><div class="clock" id="clock">00:35</div></div>
+      </div>
+      <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+      <div class="row c3">
+        <button class="pick green" data-t="color:green">Green<small>2x</small></button>
+        <button class="pick violet" data-t="color:violet">Violet<small>4.5x</small></button>
+        <button class="pick red" data-t="color:red">Red<small>2x</small></button>
+      </div>
+      <div class="nums" id="nums"></div>
+      <div class="row c2">
+        <button class="pick big" data-t="size:big">Big (5–9)<small>2x</small></button>
+        <button class="pick small" data-t="size:small">Small (0–4)<small>2x</small></button>
+      </div>
+      <div class="card" style="padding:10px">
+        <label style="font-size:.8rem;color:var(--mute)">Bet amount (coins)<input id="base" type="number" inputmode="numeric" min="1" max="100000" step="1" value="10"></label>
+        <div class="amt" id="amt"></div>
+        <div class="amt" id="mult" aria-label="Multiplier"></div>
+        <div id="total" style="margin-top:8px;font-weight:700;text-align:center"></div>
+      </div>
+      <button class="place" id="place" disabled>Select an option first</button>
+      <h2>Your bets this round</h2>
+      <div id="mybets" class="empty">No bets yet.</div>
+    </section>
+
+    <section id="v-results" class="hide">
+<div class="game-subnav" aria-label="Game menu"><button type="button" data-open-route="play" class="">🎮 Game</button><button type="button" data-open-route="results" class="active">🏆 Results</button><button type="button" data-open-route="mine" class="">📜 My History</button></div>
+
+      <h2 style="margin-top:0">Result history</h2><p class="note" style="margin-top:-4px">Showing the last 2 hours. Older results are removed automatically.</p>
+      <div class="scroll"><table><thead><tr><th>Round</th><th>Number</th><th>Size</th><th>Colour</th></tr></thead><tbody id="hist"></tbody></table></div>
+    </section>
+
+    <section id="v-mine" class="hide">
+<div class="game-subnav" aria-label="Game menu"><button type="button" data-open-route="play" class="">🎮 Game</button><button type="button" data-open-route="results" class="">🏆 Results</button><button type="button" data-open-route="mine" class="active">📜 My History</button></div>
+
+      <h2 style="margin-top:0">Your history</h2>
+      <div class="scroll"><table><thead><tr><th>Round</th><th>Bet</th><th>Stake</th><th>Net</th></tr></thead><tbody id="mine"></tbody></table></div>
+    </section>
+
+    <section id="v-settings" class="hide">
+      <div class="card" id="settings-profile" style="margin-top:0">
+        <div class="srow"><b id="st-name" style="font-size:1.1rem"></b><span class="bal" id="st-amt"></span></div>
+        <div class="note" id="st-sub" style="margin:6px 0 0"></div>
+      </div>
+      <div id="settings-wallet-links">
+        <button class="menu-btn" id="m-add"><span>Add Coins</span><span aria-hidden="true">›</span></button>
+        <button class="menu-btn" id="m-withdraw"><span>Withdraw Coins</span><span aria-hidden="true">›</span></button>
+      </div>
+      <section id="v-add" class="hide">
+      <button class="mini" data-back style="margin:12px 0 0">‹ Back to Settings</button>
+      <div class="card" id="wallet-topup">
+        <h2 style="margin-top:0">Add Coins</h2>
+        <p class="note">UPI QR se payment karein. ₹1 = 1 coin. Payment ke baad UTR submit karna zaroori hai.</p>
+        <label>Amount (INR)
+          <input id="pay-amount" type="number" inputmode="numeric" min="10" max="50000" step="1" value="100" placeholder="Enter amount in ₹">
+        </label>
+        <div class="err" id="pay-err" role="alert"></div>
+        <button class="place" id="pay-now" style="margin-top:4px">Generate UPI QR</button>
+        <p class="note" style="margin:8px 0 0">Coins admin ke payment verify karke approve karne ke baad add honge.</p>
+      </div>
+      <div class="card hide" id="upi-payment">
+        <h2 style="margin-top:0">Scan & Pay</h2>
+        <p class="note">Neeche diye gaye exact amount ka payment isi UPI QR par karein.</p>
+        <div id="upi-qr" style="display:flex;justify-content:center;background:#fff;padding:14px;border-radius:14px;min-height:210px;align-items:center"></div>
+        <div id="upi-details" style="text-align:center;margin:10px 0;font-weight:800"></div>
+        <p class="note">Payment successful hone ke baad UPI app se 12 digit UTR / UPI transaction reference number daalein.</p>
+        <label>12 digit UTR number<input id="upi-utr" inputmode="numeric" maxlength="12" placeholder="Enter UTR number"></label>
+        <div class="err" id="upi-err" role="alert"></div>
+        <button class="place" id="upi-submit">Submit UTR for verification</button>
+        <button class="mini" id="upi-cancel" style="width:100%;margin-top:8px">Cancel</button>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0">My Deposit Requests</h2>
+        <div id="my-deposits" class="empty">Loading...</div>
+      </div>
+      </section>
+      <section id="v-withdraw" class="hide">
+      <button class="mini" data-back style="margin:12px 0 0">‹ Back to Settings</button>
+      <div class="card" id="withdraw-card">
+        <h2 style="margin-top:0">Withdraw Coins</h2>
+        <p class="note">Minimum withdrawal ₹100 (100 coins). Add and save your UPI ID before requesting withdrawal.</p>
+        <label>UPI ID<input id="withdraw-upi" type="text" placeholder="name@upi" autocapitalize="off" autocomplete="off"></label>
+        <button class="mini" id="save-withdraw-upi" type="button">Save UPI ID</button>
+        <label style="margin-top:10px">Amount (₹)<input id="withdraw-amount" type="number" min="100" step="1" value="100" inputmode="numeric"></label>
+        <div class="err" id="withdraw-msg" role="alert"></div>
+        <button class="place" id="withdraw-submit" type="button">Request Withdrawal</button>
+        <h2>My Withdrawal Requests</h2><div id="my-withdrawals" class="empty">Loading...</div>
+      </div>
+      </section>
+      <div id="settings-other">
+      <div class="card hide" id="st-admin">
+        <div class="srow"><span>Total users</span><b id="st-users">0</b></div>
+        <div class="srow" style="margin-top:8px"><span>Total coins (all users)</span><b id="st-total">0</b></div>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:10px">Theme</div>
+        <div class="row c2" style="margin-top:0">
+          <button class="mini" data-theme-set="night" style="padding:12px">🌙 Neon Night</button>
+          <button class="mini" data-theme-set="day" style="padding:12px">☀️ Daylight</button>
+        </div>
+      </div>
+      <button class="menu-btn" id="m-tx"><span>Transactions</span><span aria-hidden="true">›</span></button>
+      <button class="menu-btn" id="m-pw"><span>Change password</span><span aria-hidden="true">›</span></button>
+      <button class="place logout" id="s-logout" style="margin-top:16px">Log out</button>
+      </div>
+    </section>
+
+    <section id="v-tx" class="hide">
+      <button class="mini" data-back style="margin-bottom:10px">‹ Back</button>
+      <h2 style="margin-top:0">Transactions</h2>
+      <select id="tx-user" class="hide" aria-label="Filter by user"></select>
+      <div class="scroll" style="max-height:60vh;max-height:60dvh"><table><thead><tr id="cl-head"></tr></thead><tbody id="coinlog"></tbody></table></div>
+    </section>
+
+    <section id="v-pw" class="hide">
+      <button class="mini" data-back style="margin-bottom:10px">‹ Back</button>
+      <h2 style="margin-top:0">Change password</h2>
+      <input id="pw-old" type="password" placeholder="Current password" autocomplete="current-password">
+      <input id="pw-new" type="password" placeholder="New password (min 6 characters)" autocomplete="new-password">
+      <input id="pw-new2" type="password" placeholder="Confirm new password" autocomplete="new-password">
+      <div class="err" id="pw-err" role="alert"></div>
+      <button class="place" id="pw-go" style="margin-top:4px">Change password</button>
+    </section>
+
+    <section id="v-bets" class="hide">
+      <div class="timer"><div><small>Round</small><b id="b-round">–</b></div><div style="text-align:right"><small>Total staked</small><div class="clock" id="b-total" style="font-size:1.5rem">0</div></div></div>
+      <p class="note" style="margin-top:8px">Live bets for the current round. Results are generated randomly by the server and are never affected by bets.</p>
+      <h2 style="margin-top:8px">Bets by option</h2>
+      <div class="scroll" style="max-height:40vh;max-height:40dvh"><table><thead><tr><th>Option</th><th>Players</th><th>Coins</th></tr></thead><tbody id="b-opts"></tbody></table></div>
+      <h2>Bets in this round</h2>
+      <div class="scroll" style="max-height:30vh;max-height:30dvh"><table><thead><tr><th>User</th><th>Bet on</th><th>Coins</th></tr></thead><tbody id="b-cur"></tbody></table></div>
+      <h2>Recent bets</h2>
+      <div class="scroll" style="max-height:35vh;max-height:35dvh"><table><thead><tr><th>Round</th><th>User</th><th>Bet on</th><th>Coins</th><th>Net</th></tr></thead><tbody id="b-rec"></tbody></table></div>
+    </section>
+
+    <section id="v-admin" class="hide">
+      <div class="card" id="admin-alert-card" style="margin-top:0">
+        <div class="srow"><h2 style="margin:0">Request Alerts</h2><span class="bal" id="admin-alert-status">Sound off</span></div>
+        <p class="note">Admin login hote hi sound alerts automatically start honge. New Add Coins aur Withdrawal request par ring aur browser notification milega.</p>
+        <button class="mini hide" id="admin-alert-enable" type="button">Enable Sound Alerts</button>
+        <button class="mini" id="admin-alert-disable" type="button" style="width:100%;margin-top:8px">Mute Sound</button>
+        <div class="note" id="admin-alert-message" role="status" style="margin-top:8px">Automatic alerts are ready while the admin dashboard is open.</div>
+      </div>
+      <div class="card" style="margin-top:0">
+        <h2 style="margin-top:0">Create user</h2>
+        <input id="n-id" placeholder="User ID" autocomplete="off">
+        <input id="n-phone" placeholder="Phone number (e.g. 9876543210)" inputmode="tel" autocomplete="off">
+        <input id="n-pw" placeholder="Password (min 6 characters)" autocomplete="off">
+        <div class="err" id="n-err"></div>
+        <button class="place" id="n-go" style="margin-top:4px">Create user</button>
+      </div>
+      <div class="card" id="admin-payment-upi-card">
+        <div class="srow"><h2 style="margin-top:0">Payment UPI Management</h2><span class="bal">Admin</span></div>
+        <p class="note">Yahan UPI ID add karein. Active UPI ID se users ke Add Coins QR generate honge. Payment bank/UPI statement se verify karna zaroori hai.</p>
+        <label>UPI ID (VPA)<input id="admin-upi-id" type="text" placeholder="yourname@upi" autocapitalize="off" autocomplete="off"></label>
+        <label>Payee / Business Name<input id="admin-upi-name" type="text" placeholder="Play2Win" maxlength="60"></label>
+        <div class="err" id="admin-upi-error" role="alert"></div>
+        <button class="place" id="admin-upi-add" type="button">Add UPI ID</button>
+        <div style="font-weight:700;margin:16px 0 8px">Saved UPI IDs</div>
+        <div class="scroll" style="max-height:35vh;max-height:35dvh">
+          <table><thead><tr><th>UPI ID</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="admin-upi-list"><tr><td colspan="4" class="empty">Loading...</td></tr></tbody></table>
+        </div>
+        <div id="admin-upi-qr-wrap" class="hide" style="margin-top:14px;text-align:center">
+          <b id="admin-upi-qr-title"></b>
+          <div id="admin-upi-qr" style="display:flex;justify-content:center;background:#fff;padding:14px;border-radius:14px;margin:10px auto;width:max-content"></div>
+          <button class="mini" id="admin-upi-qr-close" type="button">Close QR</button>
+        </div>
+      </div>
+      <div class="card" id="admin-deposits-card">
+        <div class="srow"><h2 style="margin-top:0">UPI Deposit Requests</h2><span class="bal" id="deposit-pending-count">0 Pending</span></div>
+        <p class="note">UTR aur bank statement verify karne ke baad hi Approve karein.</p>
+        <div class="scroll" style="max-height:45vh;max-height:45dvh"><table><thead><tr><th>Time</th><th>User</th><th>Amount</th><th>UTR</th><th>Status / Action</th></tr></thead><tbody id="deposit-requests"><tr><td colspan="5" class="empty">Loading...</td></tr></tbody></table></div>
+      </div>
+      <div class="card" id="admin-withdrawals-card">
+        <div class="srow"><h2 style="margin-top:0">Withdrawal Requests</h2><span class="bal" id="withdraw-pending-count">0 Pending</span></div>
+        <p class="note">UPI payout manually complete karne ke baad Mark Paid karein. Reject karne par coins user ko refund honge.</p>
+        <div class="scroll" style="max-height:45vh;max-height:45dvh"><table><thead><tr><th>Time</th><th>User</th><th>UPI ID</th><th>Amount</th><th>Status / Action</th></tr></thead><tbody id="withdraw-requests"><tr><td colspan="5" class="empty">Loading...</td></tr></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0">Users</h2>
+        <div class="scroll" style="max-height:50vh;max-height:50dvh"><table><thead><tr><th>User ID</th><th>Phone</th><th>Coins</th><th>Actions</th></tr></thead><tbody id="users"></tbody></table></div>
+        <p class="note" style="margin-top:8px">Accounts, passwords and coins are stored securely in the cloud database.</p>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  // ====== CONFIG: Supabase project URL and public anon key ======
+  //var SUPABASE_URL='https://xgrzaypnrcwgjtnkbaan.supabase.co';
+ var SUPABASE_URL='https://tcirnuhynvtwbprbogqp.supabase.co';
+  //var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhncnpheXBucmN3Z2p0bmtiYWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MDUxMDksImV4cCI6MjEwOTE4MTEwOX0.B04UlqYEdbkbWN-1tJI79mu3_wfQLXxCaGBU05q3wYE';
+  var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjaXJudWh5bnZ0d2JwcmJvZ3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQwNjM4MDAsImV4cCI6MjEwOTYzOTgwMH0.ksoUk7ItTqcfcO01PbCRozztAErtvhEsIQa0QGORH_g';
+  var supa=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+  // =====================================================================
+  var AMTS=[10,50,100,500];
+  // Change this UPI ID to the merchant UPI ID that should receive customer payments.
+  var MERCHANT_UPI_ID='naresh.saini13@ybl';
+  var MERCHANT_NAME='Play2Win';
+  var COLORS={green:'var(--green)',red:'var(--red)',violet:'var(--violet)'};
+  var $=function(i){return document.getElementById(i)};
+  var S={token:null,id:null,role:null,balance:0,round:0,deadline:0,results:[],pending:[],mine:[],users:[],displayName:null,email:null};
+  var target=null,amount=10,busy=false,lastRound=0,fetching=false,lastRevealedRound=0,roundRevealTimer=null;
+  try{S.token=localStorage.getItem('np_token');S.id=localStorage.getItem('np_id');S.displayName=localStorage.getItem('np_display_name');S.email=localStorage.getItem('np_email')}catch(e){}
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(function(){t.classList.remove('show')},3500)}
+  function api(fn,args){
+    if(SUPABASE_URL.indexOf('PASTE')===0)return Promise.reject(new Error('The app is not connected to the database yet. See README.md.'));
+    return fetch(SUPABASE_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY},body:JSON.stringify(args||{})})
+    .then(function(r){return r.text().then(function(t){var j=null;try{j=t?JSON.parse(t):null}catch(e){}
+      if(!r.ok){var m=(j&&j.message)||'Request failed. Check your connection.';if(/Session expired/.test(m))logout(true);throw new Error(m)}return j})},
+      function(){throw new Error('No internet connection.')});
+  }
+
+  window.Play2WinGoldBridge={
+    api:api,
+    getSession:function(){return {token:S.token,id:S.id,role:S.role,balance:S.balance}},
+    refresh:refresh,
+    toast:toast
+  };
+  function isAdmin(){return S.role==='admin'}
+  function colorsOf(n){if(n===0)return['red','violet'];if(n===5)return['green','violet'];return n%2?['green']:['red']}
+  function sizeOf(n){return n>=5?'Big':'Small'}
+  function label(t){var p=t.split(':');return p[0]==='num'?'Number '+p[1]:p[1][0].toUpperCase()+p[1].slice(1)}
+  function dots(n){return colorsOf(n).map(function(c){return '<span class="dot" style="background:'+COLORS[c]+'"></span>'}).join('')}
+  function rl(r){
+    if(r===null||r===undefined||r==='')return '–';
+    var raw=String(r).trim();
+    if(/^R-\\d{8}-/.test(raw))return raw;
+    var d=new Date();
+    var date=String(d.getFullYear())+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+    // Pad short numeric round counters to six digits; never truncate longer IDs.
+    var suffix=/^\\d+$/.test(raw)?raw.padStart(6,'0'):raw;
+    return 'R-'+date+'-'+suffix;
+  }
+
+  // ---- auth ----
+  function showAuth(){
+    $('app').classList.add('hide');$('gear').classList.add('hide');$('v-auth').classList.remove('hide');$('bal').textContent='';$('bal').dataset.admin='0';$('a-err').textContent='';
+    ['v-add','v-withdraw'].forEach(function(id){$(id).classList.add('hide')});
+    api('has_admin').then(function(has){
+      $('auth-title').textContent=has?'Log in':'Set up the admin account';
+      $('a-go').textContent=has?'Log in':'Create admin account';
+      $('a-go').dataset.setup=has?'':'1';
+    }).catch(function(e){$('a-err').textContent=e.message});
+  }
+  $('a-go').onclick=function(){
+    var id=$('a-id').value.trim(),pw=$('a-pw').value,setup=$('a-go').dataset.setup==='1',e=$('a-err');e.textContent='';
+    if(!id||!pw){e.textContent='Enter your User ID and password.';return}
+    var p=setup?api('setup_admin',{p_id:id,p_pw:pw}).then(function(){return api('login',{p_id:id,p_pw:pw})}):api('login',{p_id:id,p_pw:pw});
+    p.then(function(r){S.token=r.token;S.id=r.id;S.role=r.role;try{localStorage.setItem('np_token',r.token);localStorage.setItem('np_id',r.id)}catch(x){}
+      $('a-pw').value='';start()}).catch(function(x){e.textContent=x.message});
+  };
+  $('google-login').onclick=function(){
+    var msg=$('google-msg');
+    if(!supa){msg.textContent='Google login library load nahi hui. Page refresh karein.';return}
+    msg.textContent='Google sign-in khul raha hai...';
+    supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}})
+      .then(function(r){if(r.error)throw r.error;})
+      .catch(function(e){msg.textContent=e.message||'Google sign-in failed.'});
+  };
+  var googleLoginFinishing=false;
+  function finishGoogleLogin(){
+    if(!supa||googleLoginFinishing)return;
+    googleLoginFinishing=true;
+    supa.auth.getSession().then(function(res){
+      var session=res.data&&res.data.session;if(!session)return;
+      return fetch(SUPABASE_URL+'/rest/v1/rpc/google_wallet_login',{method:'POST',headers:{'Content-Type':'application/json',apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token}})
+        .then(function(r){return r.text().then(function(t){var j=t?JSON.parse(t):null;if(!r.ok)throw new Error((j&&j.message)||'Google account registration failed.');return j})})
+        .then(function(r){
+          S.token=r.token;S.id=r.id;S.role=r.role;S.displayName=r.name||r.display_name||r.email||r.id;S.email=r.email||null;
+          localStorage.setItem('np_token',r.token);localStorage.setItem('np_id',r.id);
+          localStorage.setItem('np_display_name',S.displayName);if(S.email)localStorage.setItem('np_email',S.email);
+          start();
+        });
+    }).catch(function(e){googleLoginFinishing=false;$('google-msg').textContent=e.message||'Google login failed.'});
+  }
+  finishGoogleLogin();
+  if(supa)supa.auth.onAuthStateChange(function(event,session){
+    if(event==='SIGNED_IN'&&session&&!S.token&&!loggingOut)finishGoogleLogin();
+    if(event==='SIGNED_OUT'&&!loggingOut){ /* user-initiated sign-out is handled by logout() */ }
+  });
+  var loggingOut=false;
+  function clearLocalLogin(silent){
+    S.token=null;S.id=null;S.role=null;S.balance=0;S.displayName=null;S.email=null;
+    try{
+      ['np_token','np_id','np_display_name','np_email'].forEach(function(k){localStorage.removeItem(k)});
+      if(silent)sessionStorage.setItem('np_msg','Session expired. Please log in again.');
+    }catch(e){}
+    googleLoginFinishing=false;
+    location.hash='';
+    showAuth();
+  }
+  function logout(silent){
+    if(loggingOut)return;
+    loggingOut=true;
+    var done=function(){clearLocalLogin(silent);loggingOut=false};
+    if(supa&&supa.auth){supa.auth.signOut().catch(function(){}).finally(done)}else done();
+  }
+
+  function start(){
+    refresh().then(function(){
+      $('v-auth').classList.add('hide');$('app').classList.remove('hide');$('gear').classList.remove('hide');buildNav();route();
+    }).catch(function(e){if(S.token)toast(e.message);showAuth()});
+  }
+
+  // ---- routing ----
+  function buildNav(){
+    $('nav').classList.remove('hide');
+    var items=isAdmin()
+      ?[['admin','Admin'],['bets','Live Bets'],['results','Results']]
+      :[['home','Games'],['rewards','🎁 Rewards']];
+    $('nav').innerHTML=items.map(function(i){return '<a href="#/'+i[0]+'" data-r="'+i[0]+'">'+i[1]+'</a>'}).join('');
+  }
+  function route(){
+    if(!S.token)return;
+    var r=location.hash.replace('#/','')||(isAdmin()?'admin':'home');
+    if(r==='logout'){logout();return}
+    if(isAdmin()&&(r==='play'||r==='mine'||r==='add'||r==='withdraw'||r==='rewards'||r==='goldball'))r='admin';
+    if(!isAdmin()&&(r==='admin'||r==='bets'))r='play';
+    var mainRoute=(r==='add'||r==='withdraw')?'settings':r;
+    ['home','rewards','goldball','play','results','mine','admin','bets','settings','tx','pw'].forEach(function(k){$('v-'+k).classList.toggle('hide',k!==mainRoute)});
+    $('v-add').classList.toggle('hide',r!=='add');
+    $('v-withdraw').classList.toggle('hide',r!=='withdraw');
+    clearPlayOnlyEffects();
+    var inSettingsSub=(r==='add'||r==='withdraw');
+    ['settings-profile','settings-wallet-links','settings-other'].forEach(function(id){$(id).classList.toggle('hide',inSettingsSub)});
+    document.querySelectorAll('#nav a').forEach(function(a){a.classList.toggle('on',a.dataset.r===r)});
+    if(r==='rewards')loadDailyRewards();
+    if(r==='mine')loadMine();
+    if(r==='admin'){if(adminAlertsEnabled)primeAdminAlertAudio();loadUsers();loadAdminPaymentUpis();loadDepositRequests();loadWithdrawalRequests();pollAdminRequests();}
+    if(r==='bets')loadBets();
+    if(r==='settings'){renderSettings();}
+    if(r==='add'){loadMyDeposits();}
+    if(r==='withdraw'){loadMyWithdrawals();}
+    if(r==='tx'){if(isAdmin())fillTxUsers().then(loadTx);else loadTx()}
+    if(r==='pw'){['pw-old','pw-new','pw-new2'].forEach(function(i){$(i).value=''});$('pw-err').textContent=''}
+    render();
+  }
+  window.addEventListener('hashchange',route);
+
+  // ---- Daily check-in rewards (server-validated; India time) ----
+  var DAILY_REWARD_VALUES=[0,1,2,3,5,10];
+  function renderDailyRewards(st){
+    var grid=$('daily-reward-grid'),status=$('daily-reward-status');
+    if(!grid||!status)return;
+    var todayDone=!!(st&&st.claimed_today);
+    var nextDay=Number((st&&st.next_day)||1);
+    var streak=Number((st&&st.streak_day)||0);
+    grid.querySelectorAll('[data-reward-day]').forEach(function(btn){
+      var day=Number(btn.getAttribute('data-reward-day'));
+      var small=btn.querySelector('small');
+      btn.classList.remove('is-current','is-claimed','is-locked');
+      btn.disabled=true;
+      if(todayDone&&day<=streak){btn.classList.add('is-claimed');small.textContent='✓ Claimed';}
+      else if(!todayDone&&day===nextDay){btn.classList.add('is-current');btn.disabled=false;small.textContent='Tap to claim';}
+      else {btn.classList.add('is-locked');small.textContent='Locked';}
+    });
+    if(todayDone){
+      status.textContent='Today’s reward claimed! Come back tomorrow for Day '+(streak>=5?5:streak+1)+'.';
+    }else{
+      status.textContent='Your next reward: Day '+nextDay+' · '+DAILY_REWARD_VALUES[nextDay]+' Coins. Open Rewards and tap the highlighted box to collect.';
+    }
+  }
+  function loadDailyRewards(){
+    if(!S.token||isAdmin())return;
+    api('daily_reward_status',{p_token:S.token}).then(renderDailyRewards).catch(function(e){
+      var status=$('daily-reward-status');if(status)status.textContent=e.message||'Could not load check-in status.';
+    });
+  }
+  var dailyRewardBusy=false;
+  document.addEventListener('click',function(ev){
+    var tile=ev.target.closest('[data-reward-day]');
+    if(!tile||tile.disabled||dailyRewardBusy)return;
+    var day=Number(tile.getAttribute('data-reward-day'));
+    dailyRewardBusy=true;tile.disabled=true;
+    var status=$('daily-reward-status');if(status)status.textContent='Collecting your Day '+day+' reward…';
+    api('claim_daily_reward',{p_token:S.token}).then(function(res){
+      toast('Congratulations! '+res.reward+' coins added to your wallet.');
+      return Promise.all([refresh(),api('daily_reward_status',{p_token:S.token})]);
+    }).then(function(results){renderDailyRewards(results[1]);})
+      .catch(function(e){toast(e.message||'Reward could not be collected.');loadDailyRewards();})
+      .then(function(){dailyRewardBusy=false;});
+  });
+
+  document.addEventListener('click',function(ev){
+    var btn=ev.target.closest('[data-open-route]');
+    if(btn){var next=btn.getAttribute('data-open-route');if(next)location.hash='#/'+next;}
+  });
+
+
+  // ---- state from server ----
+  function refresh(){
+    if(fetching)return Promise.resolve();fetching=true;
+    return api('get_state',{p_token:S.token}).then(function(s){
+      var prevPending=S.pending.length,prevRound=S.round;
+      S.role=s.role;S.phone=s.phone;S.balance=s.balance;S.round=s.round;S.results=s.results;S.pending=s.pending;
+      S.deadline=Date.now()+s.left*1000;
+      if(prevRound&&s.round!==prevRound){
+        var completed=(s.results||[]).find(function(x){return Number(x.round)===Number(prevRound)})||(s.results||[])[0];
+        if(completed&&Number(completed.round)>lastRevealedRound){
+          lastRevealedRound=Number(completed.round);
+          // Never show a result/win popup on Results, History, Settings, Admin, or other screens.
+          // Also verify that this user actually placed a bet in the completed round.
+          if(isPlayScreen()&&!isAdmin()){
+            api('my_history',{p_token:S.token}).then(function(rows){
+              if(!isPlayScreen()||isAdmin())return; // user may have navigated while history loaded
+              var roundBets=(rows||[]).filter(function(row){return Number(row.round)===Number(completed.round)});
+              if(!roundBets.length)return;
+              showRoundResult(completed.num,completed.round);
+              animateWinCoins(completed.round,roundBets);
+              loadMine();
+            }).catch(function(){});
+          }
+        }
+      }
+      fetching=false;render();
+    },function(e){fetching=false;throw e});
+  }
+  function isPlayScreen(){
+    var app=$('app'),play=$('v-play');
+    return !!(S.token&&!isAdmin()&&app&&!app.classList.contains('hide')&&play&&!play.classList.contains('hide')&&(location.hash==='#/play'||location.hash===''||location.hash==='#'));
+  }
+  function clearPlayOnlyEffects(){
+    // Popup and coin animation are allowed only while the Play screen is active.
+    if(isPlayScreen())return;
+    var overlay=$('round-overlay');
+    if(overlay)overlay.classList.add('hide');
+    if(roundRevealTimer){clearTimeout(roundRevealTimer);roundRevealTimer=null;}
+    document.querySelectorAll('.win-fx-layer').forEach(function(node){node.remove()});
+    var balance=$('bal');
+    if(balance)balance.classList.remove('balance-win-pulse');
+  }
+  function animateWinCoins(roundNo,roundRows){
+    if(!isPlayScreen()||!S.token)return;
+    var key='play2win_win_anim_'+roundNo;
+    try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1')}catch(e){}
+    var wins=(roundRows||[]).filter(function(row){
+      return Number(row.round)===Number(roundNo)&&row.settled&&Number(row.payout)>0&&Number(row.payout)>Number(row.amount);
+    });
+    if(!wins.length)return;
+    var total=wins.reduce(function(sum,row){return sum+Number(row.payout||0)},0);
+    if(total<=0||!isPlayScreen())return;
+    var layer=document.createElement('div');layer.className='win-fx-layer';layer.setAttribute('aria-hidden','true');
+    var label=document.createElement('div');label.className='win-fx-total';label.textContent='+'+total.toLocaleString('en-IN')+' COINS';layer.appendChild(label);
+    var count=Math.min(18,Math.max(8,Math.ceil(total/10)));
+    for(var i=0;i<count;i++){
+      var coin=document.createElement('div');coin.className='win-fx-coin';coin.textContent='🪙';
+      coin.style.setProperty('--dx',((Math.random()-.5)*260)+'px');
+      coin.style.setProperty('--dy',(180+Math.random()*260)+'px');
+      coin.style.setProperty('--rot',((Math.random()-.5)*520)+'deg');
+      coin.style.animationDelay=(Math.random()*.22)+'s';
+      layer.appendChild(coin);
+    }
+    document.body.appendChild(layer);
+    var balance=$('bal');if(balance)balance.classList.add('balance-win-pulse');
+    setTimeout(function(){layer.remove();if(balance)balance.classList.remove('balance-win-pulse')},2200);
+    toast('Congratulations! You won '+total.toLocaleString('en-IN')+' coins.');
+  }
+  function showRoundResult(number,roundNo){
+    if(!isPlayScreen())return;
+    var overlay=$('round-overlay');if(!overlay)return;
+    $('round-modal-kicker').textContent='ROUND '+roundNo+' RESULT';
+    $('round-modal-title').textContent='Winning number';
+    $('round-result-label').textContent='Result declared';
+    var ball=$('round-result-number');ball.textContent=String(number);ball.classList.remove('hide');
+    ball.style.background=Number(number)===0||Number(number)===5?'linear-gradient(145deg,#b88cff,#6b3fce)':Number(number)%2?'linear-gradient(145deg,#35e9a3,#0b9b68)':'linear-gradient(145deg,#ff7187,#d72e4d)';
+    $('round-modal-foot').textContent='Round complete · '+sizeOf(number);
+    overlay.classList.remove('hide');
+    if(roundRevealTimer)clearTimeout(roundRevealTimer);
+    roundRevealTimer=setTimeout(function(){overlay.classList.add('hide')},4500);
+    toast('Winning number: '+number+' · Round '+roundNo);
+  }
+  function left(){return Math.max(0,Math.ceil((S.deadline-Date.now())/1000))}
+  function tick(){
+    if(!S.token||$('app').classList.contains('hide'))return;
+    var l=left();renderClock(l);
+    if(l<=0&&!busy){busy=true;setTimeout(function(){refresh().catch(function(){}).then(function(){busy=false})},1500)}
+  }
+  function renderClock(l){
+    var locked=l<=5;if(l>35)l=35;
+    var c=$('clock');c.textContent='00:'+String(l).padStart(2,'0');var br=$('bar');if(br)br.style.width=Math.max(0,Math.min(100,l/35*100))+'%';c.classList.toggle('lock',locked);
+    $('state').textContent=locked?'Betting closed. Result coming':'Betting is open';updatePlace(locked);
+    // Countdown stays in the Play screen's normal timer; no full-screen countdown popup.
+    // Result and win effects are shown separately, and only on the visible Play screen.
+    clearPlayOnlyEffects();
+  }
+  function updatePlace(locked){
+    var b=$('place');if(isAdmin())return;
+    if(locked){b.disabled=true;b.textContent='Betting is closed';return}
+    if(amount<1){b.disabled=true;b.textContent='Enter a bet amount';return}
+    if(amount>100000){b.disabled=true;b.textContent='Maximum bet is 100,000 coins';return}
+    if(!target){b.disabled=true;b.textContent='Select an option first';return}
+    if(amount>S.balance){b.disabled=true;b.textContent='Not enough coins';return}
+    b.disabled=false;b.textContent='Place bet: '+label(target)+' · '+amount+' coins';
+  }
+  function render(){
+    if(!S.token)return;
+    $('bal').dataset.admin=isAdmin()?'1':'0';$('bal').textContent=isAdmin()?'Admin':Number(S.balance||0).toLocaleString('en-IN')+' Coins';
+    $('period').textContent=rl(S.round);
+    document.querySelectorAll('[data-t]').forEach(function(e){e.classList.toggle('sel',e.dataset.t===target)});
+    $('hist').innerHTML=S.results.length?S.results.map(function(h){return '<tr><td>'+rl(h.round)+'</td><td><b>'+h.num+'</b></td><td>'+sizeOf(h.num)+'</td><td>'+dots(h.num)+'</td></tr>'}).join(''):'<tr><td colspan="4" class="empty">No results yet.</td></tr>';
+    $('mybets').innerHTML=S.pending.length?S.pending.map(function(b){return label(b.target)+' · '+b.amount+' coins'}).join('<br>'):'No bets yet.';
+    $('mybets').className=S.pending.length?'':'empty';
+    renderClock(left());
+  }
+  function loadMine(){
+    api('my_history',{p_token:S.token}).then(function(h){S.mine=h;
+      $('mine').innerHTML=h.length?h.map(function(m){var net=m.payout-m.amount;
+        return '<tr><td>'+rl(m.round)+'</td><td>'+label(m.target)+'</td><td>'+m.amount+'</td><td style="color:'+(!m.settled?'var(--mute)':net>=0?'var(--green)':'var(--red)')+'">'+(m.settled?(net>=0?'+':'')+net:'Pending')+'</td></tr>'}).join(''):'<tr><td colspan="4" class="empty">You have not placed any bets yet.</td></tr>';
+    }).catch(function(e){toast(e.message)});
+  }
+
+  // ---- admin ----
+  function loadUsers(){
+    api('admin_list_users',{p_token:S.token}).then(function(us){S.users=us;
+      $('users').innerHTML=us.length?us.map(function(u){var who=u.email||u.display_name||u.id;return '<tr><td>'+esc(who)+'</td><td>'+esc(u.phone||'–')+'</td><td>'+u.balance+'</td><td><button class="mini" data-add="'+esc(u.id)+'">Add</button> <button class="mini" data-sub="'+esc(u.id)+'">Deduct</button> <button class="mini" data-ph="'+esc(u.id)+'">Phone</button> <button class="mini" data-rp="'+esc(u.id)+'">Reset password</button> <button class="mini" data-del="'+esc(u.id)+'">Delete</button></td></tr>'}).join(''):'<tr><td colspan="4" class="empty">No users yet. Create one above.</td></tr>';
+    }).catch(function(e){toast(e.message)});
+  }
+  $('n-go').onclick=function(){
+    var id=$('n-id').value.trim(),pw=$('n-pw').value,e=$('n-err');e.textContent='';
+    api('admin_create_user',{p_token:S.token,p_id:id,p_pw:pw,p_phone:$('n-phone').value.trim()}).then(function(){$('n-id').value='';$('n-pw').value='';$('n-phone').value='';toast('User created: '+id+' (100 starting coins)');loadUsers()}).catch(function(x){e.textContent=x.message});
+  };
+  $('users').addEventListener('click',function(e){
+    var a=e.target.dataset.add,sb=e.target.dataset.sub,d=e.target.dataset.del,ph=e.target.dataset.ph,rp=e.target.dataset.rp;
+    if(a){var v=parseInt(prompt('Coins to add to '+a+':','100'),10);if(v>0)api('admin_add_coins',{p_token:S.token,p_id:a,p_amount:v}).then(function(){toast('Added '+v+' coins to '+a);loadUsers()}).catch(function(x){toast(x.message)})}
+    if(ph){var p=prompt('New phone number for '+ph+':');if(p)api('admin_set_phone',{p_token:S.token,p_id:ph,p_phone:p.trim()}).then(function(){toast('Phone updated for '+ph);loadUsers()}).catch(function(x){toast(x.message)})}
+    if(rp){var np=prompt('New password for '+rp+' (min 6 characters):');if(np)api('admin_set_password',{p_token:S.token,p_id:rp,p_new:np}).then(function(){toast('Password reset for '+rp+'. The user must log in again.')}).catch(function(x){toast(x.message)})}
+    if(sb){var w=parseInt(prompt('Coins to deduct from '+sb+':','100'),10);if(w>0)api('admin_add_coins',{p_token:S.token,p_id:sb,p_amount:-w}).then(function(){toast('Deducted '+w+' coins from '+sb);loadUsers()}).catch(function(x){toast(x.message)})}
+    if(d&&confirm('Delete user '+d+'? This cannot be undone.'))api('admin_delete_user',{p_token:S.token,p_id:d}).then(loadUsers).catch(function(x){toast(x.message)});
+  });
+
+  // ---- UPI withdrawal requests (manual payout; no payout provider connected) ----
+  $('save-withdraw-upi').onclick=function(){
+    var u=$('withdraw-upi').value.trim(),m=$('withdraw-msg');m.style.color='var(--red)';m.textContent='';
+    if(!/^[A-Za-z0-9._-]{2,}@[A-Za-z]{2,}$/.test(u)){m.textContent='Valid UPI ID enter karein.';return}
+    api('save_withdraw_upi',{p_token:S.token,p_upi_id:u}).then(function(){m.style.color='var(--green)';m.textContent='UPI ID saved.';}).catch(function(e){m.textContent=e.message});
+  };
+  $('withdraw-submit').onclick=function(){
+    var a=Number($('withdraw-amount').value),m=$('withdraw-msg');m.style.color='var(--red)';m.textContent='';
+    if(!Number.isSafeInteger(a)||a<100){m.textContent='Minimum withdrawal ₹100 hai.';return}
+    if(a>S.balance){m.textContent='Wallet mein itne coins nahi hain.';return}
+    api('create_withdrawal_request',{p_token:S.token,p_amount:a}).then(function(){m.style.color='var(--green)';m.textContent='Withdrawal request submitted. Coins are reserved until admin review.';return Promise.all([refresh(),loadMyWithdrawals()]);}).catch(function(e){m.textContent=e.message});

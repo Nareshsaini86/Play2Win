@@ -10,31 +10,21 @@ SET search_path = public, extensions;
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS "plpgsql" WITH SCHEMA pg_catalog;
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA extensions;
-CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA vault;
-CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA pg_catalog;
 
 -- Sequences
 CREATE SEQUENCE IF NOT EXISTS public.bets_id_seq;
-ALTER SEQUENCE public.bets_id_seq OWNED BY public.bets.id;
 
 CREATE SEQUENCE IF NOT EXISTS public.coin_deposit_requests_id_seq;
-ALTER SEQUENCE public.coin_deposit_requests_id_seq OWNED BY public.coin_deposit_requests.id;
 
 CREATE SEQUENCE IF NOT EXISTS public.coin_log_id_seq;
-ALTER SEQUENCE public.coin_log_id_seq OWNED BY public.coin_log.id;
 
 CREATE SEQUENCE IF NOT EXISTS public.gold_game_ledger_id_seq;
-ALTER SEQUENCE public.gold_game_ledger_id_seq OWNED BY public.gold_game_ledger.id;
 
 CREATE SEQUENCE IF NOT EXISTS public.gold_game_rounds_id_seq;
-ALTER SEQUENCE public.gold_game_rounds_id_seq OWNED BY public.gold_game_rounds.id;
 
 CREATE SEQUENCE IF NOT EXISTS public.payment_receiving_upis_id_seq;
-ALTER SEQUENCE public.payment_receiving_upis_id_seq OWNED BY public.payment_receiving_upis.id;
 
 CREATE SEQUENCE IF NOT EXISTS public.withdrawal_requests_id_seq;
-ALTER SEQUENCE public.withdrawal_requests_id_seq OWNED BY public.withdrawal_requests.id;
 
 -- Tables
 CREATE TABLE IF NOT EXISTS public.app_users (id text NOT NULL,
@@ -138,6 +128,15 @@ CREATE TABLE IF NOT EXISTS public.withdrawal_requests (id bigint NOT NULL DEFAUL
   reviewed_by text,
   reviewed_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now());
+
+-- Attach serial sequences after their owning tables exist
+ALTER SEQUENCE public.bets_id_seq OWNED BY public.bets.id;
+ALTER SEQUENCE public.coin_deposit_requests_id_seq OWNED BY public.coin_deposit_requests.id;
+ALTER SEQUENCE public.coin_log_id_seq OWNED BY public.coin_log.id;
+ALTER SEQUENCE public.gold_game_ledger_id_seq OWNED BY public.gold_game_ledger.id;
+ALTER SEQUENCE public.gold_game_rounds_id_seq OWNED BY public.gold_game_rounds.id;
+ALTER SEQUENCE public.payment_receiving_upis_id_seq OWNED BY public.payment_receiving_upis.id;
+ALTER SEQUENCE public.withdrawal_requests_id_seq OWNED BY public.withdrawal_requests.id;
 
 -- Constraints
 ALTER TABLE public.app_users ADD CONSTRAINT app_users_balance_check CHECK ((balance >= 0));
